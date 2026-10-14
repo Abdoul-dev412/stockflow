@@ -29,6 +29,8 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'role' => \App\Enums\Role::Manager,
+            'is_active' => true,
         ];
     }
 
@@ -41,4 +43,13 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+    public function admin(): static
+        {
+            return $this->state(fn () => ['role' => \App\Enums\Role::Admin]);
+        }
+
+        public function inactive(): static
+        {
+            return $this->state(fn () => ['is_active' => false]);
+     }
 }
