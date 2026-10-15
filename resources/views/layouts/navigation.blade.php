@@ -18,6 +18,9 @@
                     <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
                      Catégories
                     </x-nav-link>
+                    <x-nav-link :href="route('suppliers.index')" :active="request()->routeIs('suppliers.*')">
+                     Fournisseurs
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -75,6 +78,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
              Catégories
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('suppliers.index')" :active="request()->routeIs('suppliers.*')">
+             Fournisseurs
             </x-responsive-nav-link>
         </div>
 

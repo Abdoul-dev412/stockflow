@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Category;
+use App\Models\Supplier;
 use App\Enums\Role;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -37,5 +38,6 @@ class DatabaseSeeder extends Seeder
     foreach (['Aliments', 'Vaccins et santé', 'Matériel', 'Emballages'] as $name) {
     Category::firstOrCreate(['name' => $name]);
 }
+   Supplier::factory()->count(3)->create();
 }
 }
