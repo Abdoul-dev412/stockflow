@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\ProductController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -24,11 +25,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('categories', CategoryController::class)->except('destroy');
     Route::patch('categories/{category}/toggle', [CategoryController::class, 'toggle'])
         ->name('categories.toggle');
-        
+
     // route de fournisseurs
     Route::resource('suppliers', SupplierController::class)->except('destroy');
     Route::patch('suppliers/{supplier}/toggle', [SupplierController::class, 'toggle'])
     ->name('suppliers.toggle');
+    
+    // route de produits
+    Route::resource('products', ProductController::class)->except('destroy');
+    Route::patch('products/{product}/toggle', [ProductController::class, 'toggle'])
+    ->name('products.toggle');
 });
 
 require __DIR__.'/auth.php';

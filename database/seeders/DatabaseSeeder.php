@@ -35,9 +35,6 @@ class DatabaseSeeder extends Seeder
         'email' => 'gestionnaire@stockflow.test',
         'role' => Role::Manager,
     ]);
-    foreach (['Aliments', 'Vaccins et santé', 'Matériel', 'Emballages'] as $name) {
-    Category::firstOrCreate(['name' => $name]);
-}
-   Supplier::factory()->count(3)->create();
+    $this->call(DemoCatalogSeeder::class);
 }
 }

@@ -71,4 +71,9 @@ class Product extends Model
     {
         return $query->where('quantity', 0);
     }
+    public function scopeNormalStock(Builder $query): Builder
+    {
+        return $query->where('quantity', '>', 0)
+            ->whereColumn('quantity', '>', 'minimum_stock');
+    }
 }

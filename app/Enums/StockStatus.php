@@ -16,4 +16,12 @@ enum StockStatus: string
             self::OutOfStock => 'Rupture',
         };
     }
+    public function badgeClasses(): string
+    {
+        return match ($this) {
+            self::Normal => 'bg-green-100 text-green-800',
+            self::Low => 'bg-amber-100 text-amber-800',
+            self::OutOfStock => 'bg-red-100 text-red-800',
+        };
+    }
 }
