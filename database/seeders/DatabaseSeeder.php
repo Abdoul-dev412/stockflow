@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Category;
 use App\Enums\Role;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -33,5 +34,8 @@ class DatabaseSeeder extends Seeder
         'email' => 'gestionnaire@stockflow.test',
         'role' => Role::Manager,
     ]);
+    foreach (['Aliments', 'Vaccins et santé', 'Matériel', 'Emballages'] as $name) {
+    Category::firstOrCreate(['name' => $name]);
+}
 }
 }
