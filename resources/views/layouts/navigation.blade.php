@@ -18,6 +18,9 @@
                     <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">
                      Produits
                     </x-nav-link>
+                    <x-nav-link :href="route('movements.index')" :active="request()->routeIs('movements.*')">
+                     Mouvements
+                    </x-nav-link>
                     <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
                      Catégories
                     </x-nav-link>
@@ -81,6 +84,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">
              Produits
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('movements.index')" :active="request()->routeIs('movements.*')">
+             Mouvements
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
              Catégories

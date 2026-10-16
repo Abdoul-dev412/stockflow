@@ -33,4 +33,14 @@ enum MovementType: string
             self::Correction => [MovementReason::Correction],
         };
     }
+
+    public function badgeClasses(): string
+    {
+        return match ($this) {
+            self::Entry => 'bg-green-100 text-green-800',
+            self::Exit => 'bg-orange-100 text-orange-800',
+            self::Adjustment => 'bg-blue-100 text-blue-800',
+            self::Correction => 'bg-purple-100 text-purple-800',
+        };
+    }
 }

@@ -70,14 +70,20 @@ class ProductController extends Controller
     }
 
     public function show(Product $product): View
-    {
-        Gate::authorize('view', $product);
+{
+    Gate::authorize('view', $product);
 
-        $product->load(['category', 'supplier']);
+    $product->load(['category', 'supplier']);
 
-        return view('products.show', compact('product'));
-    }
+    $movements = $product->movements()
+        ->with('user:id,name')
+        ->orderByDesc('occurred_at')
+        ->orderByDesc('id')
+        ->limit(10)
+        ->get();
 
+    return view('products.show', compact('product', 'movements'));
+}
     public function edit(Product $product): View
     {
         Gate::authorize('update', $product);

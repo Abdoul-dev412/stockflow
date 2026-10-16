@@ -7,6 +7,7 @@ use App\Enums\MovementStatus;
 use App\Enums\MovementType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 
 class StockMovement extends Model
@@ -66,5 +67,10 @@ class StockMovement extends Model
     public function signedQuantity(): int
     {
         return ($this->quantity_after ?? 0) - ($this->quantity_before ?? 0);
+    }
+
+    public function correction(): HasOne
+    {
+        return $this->hasOne(self::class, 'corrects_movement_id');
     }
 }

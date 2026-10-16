@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\StockMovementController;
+use App\Http\Controllers\MovementCorrectionController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -35,6 +37,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('products', ProductController::class)->except('destroy');
     Route::patch('products/{product}/toggle', [ProductController::class, 'toggle'])
     ->name('products.toggle');
-});
+    //
+    Route::get('movements', [StockMovementController::class, 'index'])->name('movements.index');
+    Route::get('products/{product}/movements/{type}/create', [StockMovementController::class, 'create'])
+        ->whereIn('type', ['entry', 'exit', 'adjustment'])->name('movements.create');
+    Route::post('products/{product}/movements/{type}', [StockMovementController::class, 'store'])
+        ->whereIn('type', ['entry', 'exit', 'adjustment'])->name('movements.store');
+    Route::get('movements/{movement}/correct', [MovementCorrectionController::class, 'create'])
+        ->name('movements.correct.create');
+    Route::post('movements/{movement}/correct', [MovementCorrectionController::class, 'store'])
+        ->name('movements.correct.store');
+    });
 
 require __DIR__.'/auth.php';

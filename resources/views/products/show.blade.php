@@ -12,6 +12,7 @@
     <div class="py-8">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
             <x-flash-status />
+            <x-form-error />
 
             <div class="bg-white shadow-sm sm:rounded-lg p-6">
                 <div class="flex flex-wrap items-center gap-4">
@@ -55,9 +56,43 @@
                 <div class="text-gray-500">Créé le {{ $product->created_at->format('d/m/Y') }}, modifié le {{ $product->updated_at->format('d/m/Y') }}</div>
             </div>
 
-            <div class="bg-white shadow-sm sm:rounded-lg p-6 text-sm text-gray-500">
-                L'historique des mouvements de ce produit apparaîtra ici dès le jour 7.
-            </div>
+            <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <h3 class="font-medium text-gray-900">Derniers mouvements</h3>
+
+        @can('create', App\Models\StockMovement::class)
+            @if ($product->is_active)
+                <div class="flex gap-2 text-sm">
+                    <a href="{{ route('movements.create', [$product, 'entry']) }}"
+                        class="rounded-md bg-green-600 px-3 py-1.5 text-white hover:bg-green-700">Entrée</a>
+                    <a href="{{ route('movements.create', [$product, 'exit']) }}"
+                        class="rounded-md bg-orange-600 px-3 py-1.5 text-white hover:bg-orange-700">Sortie</a>
+                    <a href="{{ route('movements.create', [$product, 'adjustment']) }}"
+                        class="rounded-md bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700">Ajustement</a>
+                </div>
+            @endif
+        @endcan
+    </div>
+
+    @forelse ($movements as $movement)
+        @php $signed = $movement->signedQuantity(); @endphp
+        <div class="flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3 text-sm">
+            <span class="text-gray-500">{{ $movement->occurred_at->format('d/m/Y H:i') }}</span>
+            <x-movement-badge :type="$movement->type" />
+            <span class="font-medium {{ $signed >= 0 ? 'text-green-700' : 'text-red-700' }}">
+                {{ $signed > 0 ? '+' : '' }}{{ $signed }}
+            </span>
+            <span class="text-gray-500">{{ $movement->quantity_before }} → {{ $movement->quantity_after }}</span>
+            <span>{{ $movement->reason_code->label() }}</span>
+            <span class="text-gray-500">par {{ $movement->user->name }}</span>
+        </div>
+            @empty
+                <p class="text-sm text-gray-500">Aucun mouvement enregistré pour ce produit.</p>
+            @endforelse
+
+            <a href="{{ route('movements.index', ['product' => $product->id]) }}"
+                class="text-sm text-indigo-600 hover:underline">Voir tout l'historique →</a>
+        </div>
 
             <a href="{{ route('products.index') }}" class="text-sm text-gray-600 hover:underline">
                 ← Retour aux produits
