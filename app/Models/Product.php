@@ -82,4 +82,35 @@ class Product extends Model
     {
         return $this->hasMany(StockMovement::class);
     }
+    /** Produits à surveiller : stock faible ou rupture (la quantité 0 est toujours <= au seuil). */
+    public function scopeNeedsRestock(Builder $query): Builder
+    {
+        return $query->whereColumn('quantity', '<=', 'minimum_stock');
+    }
+
+    /** Ruptures d'abord, puis les stocks les plus bas. */
+    public function scopeMostUrgentFirst(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw('CASE WHEN quantity = 0 THEN 0 ELSE 1 END')
+            ->orderBy('quantity')
+            ->orderBy('name');
+    }
+
+    /** @return array{active: int, low: int, out: int} compteurs des produits actifs, en une requête */
+    public static function stockCounts(): array
+    {
+        $row = static::query()
+            ->active()
+            ->selectRaw('COUNT(*) as active_count,
+                COALESCE(SUM(quantity = 0), 0) as out_count,
+                COALESCE(SUM(quantity > 0 AND quantity <= minimum_stock), 0) as low_count')
+            ->first();
+
+        return [
+            'active' => (int) $row->active_count,
+            'low' => (int) $row->low_count,
+            'out' => (int) $row->out_count,
+        ];
+    }
 }
