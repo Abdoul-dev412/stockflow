@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\User;
+use App\Services\StockMovementService;
 use Illuminate\Database\Seeder;
 
 class DemoCatalogSeeder extends Seeder
@@ -39,17 +41,30 @@ class DemoCatalogSeeder extends Seeder
             ['EMB-002', 'Carton de 12 plateaux', 'Emballages', $agro, 'unité', 1800, 75, 40],
         ];
 
+        $admin = User::where('email', 'admin@stockflow.test')->firstOrFail();
+        $service = app(StockMovementService::class);
+
         foreach ($rows as [$sku, $name, $category, $supplier, $unit, $price, $quantity, $minimum]) {
-            Product::factory()->create([
+            $product = Product::factory()->create([
                 'sku' => $sku,
                 'name' => $name,
                 'category_id' => $categories[$category]->id,
                 'supplier_id' => $supplier->id,
                 'unit' => $unit,
                 'purchase_price' => $price,
-                'quantity' => $quantity,
+                'quantity' => 0,
                 'minimum_stock' => $minimum,
             ]);
+
+            if ($quantity > 0) {
+                $service->recordEntry(
+                    $product,
+                    $quantity,
+                    $admin,
+                    comment: 'Stock initial (données de démonstration)',
+                    occurredAt: now()->subDays(30),
+                );
+            }
         }
     }
 }

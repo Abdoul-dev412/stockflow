@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
@@ -75,5 +76,10 @@ class Product extends Model
     {
         return $query->where('quantity', '>', 0)
             ->whereColumn('quantity', '>', 'minimum_stock');
+    }
+    // stock movements relationship
+    public function movements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
     }
 }
