@@ -61,4 +61,10 @@ class StockMovement extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /** Variation réelle du stock : positive pour un apport, négative pour un retrait. */
+    public function signedQuantity(): int
+    {
+        return ($this->quantity_after ?? 0) - ($this->quantity_before ?? 0);
+    }
 }

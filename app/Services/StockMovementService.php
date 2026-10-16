@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\User;
 use Carbon\CarbonInterface;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -26,7 +27,7 @@ class StockMovementService
         ?string $comment = null,
         ?CarbonInterface $occurredAt = null,
     ): StockMovement {
-        return $this->record(MovementType::Entry, $product, $quantity, $user, $reason, $comment, $occurredAt);
+        return $this->recordSimple(MovementType::Entry, $product, $quantity, $user, $reason, $comment, $occurredAt);
     }
 
     public function recordExit(
@@ -37,10 +38,115 @@ class StockMovementService
         ?string $comment = null,
         ?CarbonInterface $occurredAt = null,
     ): StockMovement {
-        return $this->record(MovementType::Exit, $product, $quantity, $user, $reason, $comment, $occurredAt);
+        return $this->recordSimple(MovementType::Exit, $product, $quantity, $user, $reason, $comment, $occurredAt);
     }
 
-    private function record(
+    /**
+     * Ajustement d'inventaire : on fournit la quantité constatée,
+     * le service calcule l'écart par rapport au stock théorique.
+     */
+    public function recordAdjustment(
+        Product $product,
+        int $countedQuantity,
+        User $user,
+        ?string $comment,
+        ?CarbonInterface $occurredAt = null,
+    ): StockMovement {
+        $comment = $this->cleanComment($comment);
+
+        $this->assertActiveUser($user);
+
+        if ($countedQuantity < 0 || $countedQuantity > self::MAX_STOCK) {
+            throw new StockMovementException('La quantité constatée doit être un entier positif ou nul.');
+        }
+
+        $this->assertComment($comment, 'Un ajustement doit être justifié par un commentaire.');
+
+        $movement = $this->applyLocked(
+            $product->getKey(),
+            $user,
+            requireActiveProduct: true,
+            plan: function (Product $locked) use ($countedQuantity, $comment, $occurredAt) {
+                $difference = $countedQuantity - $locked->quantity;
+
+                if ($difference === 0) {
+                    throw new StockMovementException(
+                        'La quantité constatée est identique au stock théorique : aucun ajustement nécessaire.'
+                    );
+                }
+
+                return $this->plan(
+                    MovementType::Adjustment,
+                    MovementReason::Inventory,
+                    abs($difference),
+                    $countedQuantity,
+                    $comment,
+                    $occurredAt,
+                );
+            },
+        );
+
+        return $this->refreshProduct($product, $movement);
+    }
+
+    /**
+     * Correction : enregistre le mouvement inverse d'un mouvement appliqué.
+     * L'original n'est jamais modifié.
+     */
+    public function recordCorrection(
+        StockMovement $original,
+        User $user,
+        ?string $comment,
+        ?CarbonInterface $occurredAt = null,
+    ): StockMovement {
+        $comment = $this->cleanComment($comment);
+
+        $this->assertActiveUser($user);
+        $this->assertComment($comment, 'Une correction doit être justifiée par un commentaire.');
+
+        return $this->applyLocked(
+            $original->product_id,
+            $user,
+            requireActiveProduct: false,
+            plan: function (Product $locked) use ($original, $comment, $occurredAt) {
+                // On relit l'original sous verrou : son état a pu changer entre-temps.
+                $fresh = StockMovement::query()->find($original->getKey());
+
+                if ($fresh === null || $fresh->status !== MovementStatus::Applied) {
+                    throw new StockMovementException('Seul un mouvement appliqué peut être corrigé.');
+                }
+
+                if ($fresh->type === MovementType::Correction) {
+                    throw new StockMovementException(
+                        'Une correction ne peut pas être corrigée : enregistre une nouvelle opération.'
+                    );
+                }
+
+                if (StockMovement::query()->where('corrects_movement_id', $fresh->id)->exists()) {
+                    throw new StockMovementException('Ce mouvement a déjà été corrigé.');
+                }
+
+                $before = $locked->quantity;
+                $after = $before - $fresh->signedQuantity();
+
+                if ($after < 0) {
+                    throw new InsufficientStockException($before, $fresh->quantity);
+                }
+
+                return $this->plan(
+                    MovementType::Correction,
+                    MovementReason::Correction,
+                    $fresh->quantity,
+                    $after,
+                    $comment,
+                    $occurredAt,
+                    $fresh->id,
+                );
+            },
+        );
+    }
+
+    private function recordSimple(
         MovementType $type,
         Product $product,
         int $quantity,
@@ -49,71 +155,9 @@ class StockMovementService
         ?string $comment,
         ?CarbonInterface $occurredAt,
     ): StockMovement {
-        $comment = blank($comment) ? null : trim($comment);
+        $comment = $this->cleanComment($comment);
 
-        $this->assertValidRequest($type, $quantity, $user, $reason, $comment);
-
-        $movement = DB::transaction(function () use ($type, $product, $quantity, $user, $reason, $comment, $occurredAt) {
-            // Verrou de ligne : toute autre transaction qui touche ce produit attend ici.
-            $locked = Product::query()->lockForUpdate()->find($product->getKey());
-
-            if ($locked === null) {
-                throw new StockMovementException('Produit introuvable.');
-            }
-
-            if (! $locked->is_active) {
-                throw new StockMovementException(
-                    'Un produit inactif ne peut plus faire l\'objet de nouvelles opérations de stock.'
-                );
-            }
-
-            $before = $locked->quantity;
-
-            if ($type === MovementType::Exit && $quantity > $before) {
-                throw new InsufficientStockException($before, $quantity);
-            }
-
-            $after = $type === MovementType::Entry ? $before + $quantity : $before - $quantity;
-
-            if ($after > self::MAX_STOCK) {
-                throw new StockMovementException('La quantité en stock dépasserait la limite autorisée.');
-            }
-
-            $locked->forceFill(['quantity' => $after])->save();
-
-            return StockMovement::create([
-                'uuid' => (string) Str::uuid(),
-                'product_id' => $locked->id,
-                'user_id' => $user->getKey(),
-                'type' => $type,
-                'reason_code' => $reason,
-                'quantity' => $quantity,
-                'quantity_before' => $before,
-                'quantity_after' => $after,
-                'reason' => $comment,
-                'status' => MovementStatus::Applied,
-                'occurred_at' => $occurredAt ?? now(),
-                'recorded_at' => now(),
-            ]);
-        }, 3);
-
-        // Garde le modèle de l'appelant cohérent avec la base.
-        $product->forceFill(['quantity' => $movement->quantity_after])
-            ->syncOriginalAttribute('quantity');
-
-        return $movement;
-    }
-
-    private function assertValidRequest(
-        MovementType $type,
-        int $quantity,
-        User $user,
-        MovementReason $reason,
-        ?string $comment,
-    ): void {
-        if (! in_array($type, [MovementType::Entry, MovementType::Exit], true)) {
-            throw new StockMovementException('Ce type de mouvement n\'est pas géré ici.');
-        }
+        $this->assertActiveUser($user);
 
         if ($quantity < 1 || $quantity > self::MAX_STOCK) {
             throw new StockMovementException('La quantité doit être un entier strictement positif.');
@@ -125,16 +169,132 @@ class StockMovementService
             );
         }
 
-        if ($reason === MovementReason::Other && $comment === null) {
-            throw new StockMovementException('Un commentaire est obligatoire pour le motif « Autre ».');
+        $this->assertComment(
+            $comment,
+            $reason === MovementReason::Other ? 'Un commentaire est obligatoire pour le motif « Autre ».' : null,
+        );
+
+        $movement = $this->applyLocked(
+            $product->getKey(),
+            $user,
+            requireActiveProduct: true,
+            plan: function (Product $locked) use ($type, $reason, $quantity, $comment, $occurredAt) {
+                $before = $locked->quantity;
+
+                if ($type === MovementType::Exit && $quantity > $before) {
+                    throw new InsufficientStockException($before, $quantity);
+                }
+
+                $after = $type === MovementType::Entry ? $before + $quantity : $before - $quantity;
+
+                return $this->plan($type, $reason, $quantity, $after, $comment, $occurredAt);
+            },
+        );
+
+        return $this->refreshProduct($product, $movement);
+    }
+
+    /**
+     * Cœur du service : une transaction, un verrou de ligne sur le produit,
+     * la quantité relue sous verrou, puis mise à jour du stock et du mouvement ensemble.
+     */
+    private function applyLocked(
+        int|string $productId,
+        User $user,
+        bool $requireActiveProduct,
+        Closure $plan,
+    ): StockMovement {
+        return DB::transaction(function () use ($productId, $user, $requireActiveProduct, $plan) {
+            // Verrou de ligne : toute autre transaction qui touche ce produit attend ici.
+            $locked = Product::query()->lockForUpdate()->find($productId);
+
+            if ($locked === null) {
+                throw new StockMovementException('Produit introuvable.');
+            }
+
+            if ($requireActiveProduct && ! $locked->is_active) {
+                throw new StockMovementException(
+                    'Un produit inactif ne peut plus faire l\'objet de nouvelles opérations de stock.'
+                );
+            }
+
+            $plan = $plan($locked);
+            $before = $locked->quantity;
+
+            $locked->forceFill(['quantity' => $plan['after']])->save();
+
+            return StockMovement::create([
+                'uuid' => (string) Str::uuid(),
+                'product_id' => $locked->id,
+                'user_id' => $user->getKey(),
+                'type' => $plan['type'],
+                'reason_code' => $plan['reason'],
+                'quantity' => $plan['quantity'],
+                'quantity_before' => $before,
+                'quantity_after' => $plan['after'],
+                'reason' => $plan['comment'],
+                'corrects_movement_id' => $plan['corrects'],
+                'status' => MovementStatus::Applied,
+                'occurred_at' => $plan['occurredAt'] ?? now(),
+                'recorded_at' => now(),
+            ]);
+        }, 3);
+    }
+
+    /** @return array{type: MovementType, reason: MovementReason, quantity: int, after: int, comment: ?string, occurredAt: ?CarbonInterface, corrects: ?int} */
+    private function plan(
+        MovementType $type,
+        MovementReason $reason,
+        int $quantity,
+        int $after,
+        ?string $comment,
+        ?CarbonInterface $occurredAt,
+        ?int $corrects = null,
+    ): array {
+        if ($after > self::MAX_STOCK) {
+            throw new StockMovementException('La quantité en stock dépasserait la limite autorisée.');
+        }
+
+        return [
+            'type' => $type,
+            'reason' => $reason,
+            'quantity' => $quantity,
+            'after' => $after,
+            'comment' => $comment,
+            'occurredAt' => $occurredAt,
+            'corrects' => $corrects,
+        ];
+    }
+
+    /** Garde le modèle de l'appelant cohérent avec la base. */
+    private function refreshProduct(Product $product, StockMovement $movement): StockMovement
+    {
+        $product->forceFill(['quantity' => $movement->quantity_after])
+            ->syncOriginalAttribute('quantity');
+
+        return $movement;
+    }
+
+    private function cleanComment(?string $comment): ?string
+    {
+        return blank($comment) ? null : trim($comment);
+    }
+
+    private function assertActiveUser(User $user): void
+    {
+        if (! $user->is_active) {
+            throw new StockMovementException('Un compte désactivé ne peut pas enregistrer de mouvement.');
+        }
+    }
+
+    private function assertComment(?string $comment, ?string $missingMessage): void
+    {
+        if ($comment === null && $missingMessage !== null) {
+            throw new StockMovementException($missingMessage);
         }
 
         if ($comment !== null && mb_strlen($comment) > 500) {
             throw new StockMovementException('Le commentaire ne doit pas dépasser 500 caractères.');
-        }
-
-        if (! $user->is_active) {
-            throw new StockMovementException('Un compte désactivé ne peut pas enregistrer de mouvement.');
         }
     }
 }
