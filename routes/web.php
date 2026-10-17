@@ -9,6 +9,9 @@ use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\MovementCorrectionController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AuditController;
+use App\Http\Controllers\ExportController;
+
 
 Route::get('/', function () {
     return view('welcome');
@@ -50,6 +53,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('movements/{movement}/correct', [MovementCorrectionController::class, 'store'])
         ->name('movements.correct.store');
     Route::get('alerts', [AlertController::class, 'index'])->name('alerts.index');
+    Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
+
+    Route::middleware('can:export-data')->prefix('exports')->name('exports.')->group(function () {
+        Route::get('products', [ExportController::class, 'products'])->name('products');
+        Route::get('stock-levels', [ExportController::class, 'stockLevels'])->name('stock-levels');
+        Route::get('movements', [ExportController::class, 'movements'])->name('movements');
+    });
     });
 
 require __DIR__.'/auth.php';

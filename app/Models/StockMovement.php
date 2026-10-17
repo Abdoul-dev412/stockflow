@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 
 class StockMovement extends Model
 {
@@ -72,5 +74,20 @@ class StockMovement extends Model
     public function correction(): HasOne
     {
         return $this->hasOne(self::class, 'corrects_movement_id');
+    }
+
+    public function scopeFiltered(Builder $query, array $filters): Builder
+    {
+        $search = trim((string) ($filters['search'] ?? ''));
+
+        return $query
+            ->when($filters['product'] ?? null, fn ($q, $id) => $q->where('product_id', $id))
+            ->when($search !== '', fn ($q) => $q->whereHas('product', fn ($p) => $p->withTrashed()
+                ->where(fn ($p) => $p->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%"))))
+            ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
+            ->when($filters['user'] ?? null, fn ($q, $id) => $q->where('user_id', $id))
+            ->when($filters['from'] ?? null, fn ($q, $date) => $q->where('occurred_at', '>=', Carbon::parse($date)->startOfDay()))
+            ->when($filters['to'] ?? null, fn ($q, $date) => $q->where('occurred_at', '<=', Carbon::parse($date)->endOfDay()));
     }
 }

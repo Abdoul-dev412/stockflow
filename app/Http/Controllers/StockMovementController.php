@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use App\Http\Requests\MovementFilterRequest;
 
 class StockMovementController extends Controller
 {
@@ -24,32 +25,16 @@ class StockMovementController extends Controller
     {
     }
 
-    public function index(Request $request): View
+    public function index(MovementFilterRequest $request): View
     {
         Gate::authorize('viewAny', StockMovement::class);
 
-        $filters = $request->validate([
-            'product' => ['nullable', 'integer', 'min:1'],
-            'search' => ['nullable', 'string', 'max:100'],
-            'type' => ['nullable', Rule::enum(MovementType::class)],
-            'user' => ['nullable', 'integer', 'min:1'],
-            'from' => ['nullable', 'date_format:Y-m-d'],
-            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
-        ]);
-
-        $search = trim((string) ($filters['search'] ?? ''));
+        $filters = $request->validated();
 
         $movements = StockMovement::query()
             ->with(['product', 'user:id,name'])
             ->withExists('correction')
-            ->when($filters['product'] ?? null, fn ($q, $id) => $q->where('product_id', $id))
-            ->when($search !== '', fn ($q) => $q->whereHas('product', fn ($p) => $p->withTrashed()
-                ->where(fn ($p) => $p->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%"))))
-            ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
-            ->when($filters['user'] ?? null, fn ($q, $id) => $q->where('user_id', $id))
-            ->when($filters['from'] ?? null, fn ($q, $date) => $q->where('occurred_at', '>=', Carbon::parse($date)->startOfDay()))
-            ->when($filters['to'] ?? null, fn ($q, $date) => $q->where('occurred_at', '<=', Carbon::parse($date)->endOfDay()))
+            ->filtered($filters)
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
             ->paginate(25)

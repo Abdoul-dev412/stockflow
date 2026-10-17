@@ -10,6 +10,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
+use App\Enums\AuditAction;
+use App\Services\AuditLogger;
+use App\Support\ProductFilters;
 
 class ProductController extends Controller
 {
@@ -19,39 +22,28 @@ class ProductController extends Controller
     {
         Gate::authorize('viewAny', Product::class);
 
-        $search = trim((string) $request->query('search', ''));
-        $status = in_array($request->query('status'), ['active', 'inactive'], true)
-            ? $request->query('status') : null;
-        $stock = in_array($request->query('stock'), ['normal', 'low', 'out'], true)
-            ? $request->query('stock') : null;
-        $categoryId = $request->integer('category') ?: null;
+        $filters = ProductFilters::fromRequest($request);
         $sort = in_array($request->query('sort'), self::SORTABLE, true)
             ? $request->query('sort') : 'name';
         $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
 
         $products = Product::query()
             ->with(['category:id,name', 'supplier:id,name'])
-            ->when($search !== '', fn ($q) => $q->where(
-                fn ($q) => $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%")
-            ))
-            ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
-            ->when($status === 'active', fn ($q) => $q->where('is_active', true))
-            ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
-            ->when($stock === 'normal', fn ($q) => $q->normalStock())
-            ->when($stock === 'low', fn ($q) => $q->lowStock())
-            ->when($stock === 'out', fn ($q) => $q->outOfStock())
+            ->filtered($filters)
             ->orderBy($sort, $direction)
             ->orderBy('id')
             ->paginate(15)
             ->withQueryString();
 
-        $categories = Category::orderBy('name')->get(['id', 'name']);
-
-        return view('products.index', compact(
-            'products', 'categories', 'status', 'stock', 'categoryId', 'sort', 'direction'
-        ));
+        return view('products.index', [
+            'products' => $products,
+            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'status' => $filters['status'],
+            'stock' => $filters['stock'],
+            'categoryId' => $filters['category'],
+            'sort' => $sort,
+            'direction' => $direction,
+        ]);
     }
 
     public function create(): View
@@ -61,9 +53,13 @@ class ProductController extends Controller
         return view('products.create', $this->formOptions());
     }
 
-    public function store(ProductRequest $request): RedirectResponse
+    public function store(ProductRequest $request, AuditLogger $audit): RedirectResponse
     {
-        $product = Product::create($request->validated());
+        $product = $audit->createWithAudit(
+            new Product($request->validated()),
+            $request->user(),
+            AuditAction::ProductCreated,
+        );
 
         return redirect()->route('products.show', $product)
             ->with('status', 'Produit créé. Son stock initial est à 0.');
@@ -91,19 +87,28 @@ class ProductController extends Controller
         return view('products.edit', ['product' => $product] + $this->formOptions($product));
     }
 
-    public function update(ProductRequest $request, Product $product): RedirectResponse
+    public function update(ProductRequest $request, Product $product, AuditLogger $audit): RedirectResponse
     {
-        $product->update($request->validated());
+        $audit->updateWithAudit(
+            $product->fill($request->validated()),
+            $request->user(),
+            AuditAction::ProductUpdated,
+        );
 
         return redirect()->route('products.show', $product)
             ->with('status', 'Produit modifié.');
     }
 
-    public function toggle(Product $product): RedirectResponse
+    public function toggle(Request $request, Product $product, AuditLogger $audit): RedirectResponse
     {
         Gate::authorize('update', $product);
 
-        $product->update(['is_active' => ! $product->is_active]);
+        $audit->toggleWithAudit(
+            $product,
+            $request->user(),
+            AuditAction::ProductActivated,
+            AuditAction::ProductDeactivated,
+        );
 
         return back()->with('status', $product->is_active
             ? 'Produit réactivé.'

@@ -1,13 +1,21 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-2">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Produits</h2>
-            @can('create', App\Models\Product::class)
-                <a href="{{ route('products.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase tracking-widest rounded-md hover:bg-gray-700">
-                    Nouveau produit
-                </a>
-            @endcan
+            <div class="flex flex-wrap items-center gap-2 text-sm">
+                @can('export-data')
+                    <a href="{{ route('exports.products', request()->query()) }}"
+                        class="rounded-md bg-gray-200 px-3 py-1.5 text-gray-800 hover:bg-gray-300">Exporter (CSV)</a>
+                    <a href="{{ route('exports.stock-levels', request()->query()) }}"
+                        class="rounded-md bg-gray-200 px-3 py-1.5 text-gray-800 hover:bg-gray-300">Niveaux de stock (CSV)</a>
+                @endcan
+                @can('create', App\Models\Product::class)
+                    <a href="{{ route('products.create') }}"
+                        class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase tracking-widest rounded-md hover:bg-gray-700">
+                        Nouveau produit
+                    </a>
+                @endcan
+            </div>
         </div>
     </x-slot>
 

@@ -8,6 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
+use App\Enums\AuditAction;
+use App\Services\AuditLogger;
 
 class SupplierController extends Controller
 {
@@ -46,9 +48,13 @@ class SupplierController extends Controller
         return view('suppliers.create');
     }
 
-    public function store(SupplierRequest $request): RedirectResponse
+    public function store(SupplierRequest $request, AuditLogger $audit): RedirectResponse
     {
-        Supplier::create($request->validated());
+        $audit->createWithAudit(
+            new Supplier($request->validated()),
+            $request->user(),
+            AuditAction::SupplierCreated,
+        );
 
         return redirect()->route('suppliers.index')
             ->with('status', 'Fournisseur ajouté.');
@@ -70,19 +76,28 @@ class SupplierController extends Controller
         return view('suppliers.edit', compact('supplier'));
     }
 
-    public function update(SupplierRequest $request, Supplier $supplier): RedirectResponse
+    public function update(SupplierRequest $request, Supplier $supplier, AuditLogger $audit): RedirectResponse
     {
-        $supplier->update($request->validated());
+        $audit->updateWithAudit(
+            $supplier->fill($request->validated()),
+            $request->user(),
+            AuditAction::SupplierUpdated,
+        );
 
         return redirect()->route('suppliers.index')
             ->with('status', 'Fournisseur modifié.');
     }
 
-    public function toggle(Supplier $supplier): RedirectResponse
+    public function toggle(Request $request, Supplier $supplier, AuditLogger $audit): RedirectResponse
     {
         Gate::authorize('update', $supplier);
 
-        $supplier->update(['is_active' => ! $supplier->is_active]);
+        $audit->toggleWithAudit(
+            $supplier,
+            $request->user(),
+            AuditAction::SupplierActivated,
+            AuditAction::SupplierDeactivated,
+        );
 
         return back()->with('status', $supplier->is_active
             ? 'Fournisseur réactivé.'

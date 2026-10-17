@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AuditAction;
 use App\Enums\MovementReason;
 use App\Enums\MovementStatus;
 use App\Enums\MovementType;
@@ -17,6 +18,9 @@ use Illuminate\Support\Str;
 
 class StockMovementService
 {
+    public function __construct(private AuditLogger $audit)
+    {
+    }
     public const MAX_STOCK = 2_000_000_000;
 
     public function recordEntry(
@@ -223,21 +227,25 @@ class StockMovementService
 
             $locked->forceFill(['quantity' => $plan['after']])->save();
 
-            return StockMovement::create([
-                'uuid' => (string) Str::uuid(),
-                'product_id' => $locked->id,
-                'user_id' => $user->getKey(),
-                'type' => $plan['type'],
-                'reason_code' => $plan['reason'],
-                'quantity' => $plan['quantity'],
-                'quantity_before' => $before,
-                'quantity_after' => $plan['after'],
-                'reason' => $plan['comment'],
-                'corrects_movement_id' => $plan['corrects'],
-                'status' => MovementStatus::Applied,
-                'occurred_at' => $plan['occurredAt'] ?? now(),
-                'recorded_at' => now(),
-            ]);
+           $movement = StockMovement::create([
+            'uuid' => (string) Str::uuid(),
+            'product_id' => $locked->id,
+            'user_id' => $user->getKey(),
+            'type' => $plan['type'],
+            'reason_code' => $plan['reason'],
+            'quantity' => $plan['quantity'],
+            'quantity_before' => $before,
+            'quantity_after' => $plan['after'],
+            'reason' => $plan['comment'],
+            'corrects_movement_id' => $plan['corrects'],
+            'status' => MovementStatus::Applied,
+            'occurred_at' => $plan['occurredAt'] ?? now(),
+            'recorded_at' => now(),
+        ]);
+
+        $this->auditSensitiveOperation($user, $locked, $movement);
+
+        return $movement;
         }, 3);
     }
 
@@ -296,5 +304,26 @@ class StockMovementService
         if ($comment !== null && mb_strlen($comment) > 500) {
             throw new StockMovementException('Le commentaire ne doit pas dépasser 500 caractères.');
         }
+    }
+    /** Ajustements et corrections sont tracés, dans la même transaction que le mouvement. */
+    private function auditSensitiveOperation(User $user, Product $product, StockMovement $movement): void
+    {
+        $action = match ($movement->type) {
+            MovementType::Adjustment => AuditAction::StockAdjustment,
+            MovementType::Correction => AuditAction::StockCorrection,
+            default => null,
+        };
+
+        if ($action === null) {
+            return;
+        }
+
+        $this->audit->record($user, $action, $movement, array_filter([
+            'product' => $product->sku,
+            'quantity_before' => $movement->quantity_before,
+            'quantity_after' => $movement->quantity_after,
+            'reason' => $movement->reason,
+            'corrects_movement_id' => $movement->corrects_movement_id,
+        ], fn ($value) => $value !== null));
     }
 }

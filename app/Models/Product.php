@@ -113,4 +113,24 @@ class Product extends Model
             'out' => (int) $row->out_count,
         ];
     }
+
+    public function scopeFiltered(Builder $query, array $filters): Builder
+    {
+        $search = $filters['search'] ?? '';
+        $status = $filters['status'] ?? null;
+        $stock = $filters['stock'] ?? null;
+
+        return $query
+            ->when($search !== '', fn ($q) => $q->where(
+                fn ($q) => $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('barcode', 'like', "%{$search}%")
+            ))
+            ->when($filters['category'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
+            ->when($status === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
+            ->when($stock === 'normal', fn ($q) => $q->normalStock())
+            ->when($stock === 'low', fn ($q) => $q->lowStock())
+            ->when($stock === 'out', fn ($q) => $q->outOfStock());
+    }
 }

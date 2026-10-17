@@ -9,6 +9,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
+use App\Enums\AuditAction;
+use App\Services\AuditLogger;
 
 class CategoryController extends Controller
 {
@@ -41,9 +43,13 @@ class CategoryController extends Controller
         return view('categories.create');
     }
 
-    public function store(StoreCategoryRequest $request): RedirectResponse
+    public function store(StoreCategoryRequest $request, AuditLogger $audit): RedirectResponse
     {
-        Category::create($request->validated());
+        $audit->createWithAudit(
+            new Category($request->validated()),
+            $request->user(),
+            AuditAction::CategoryCreated,
+        );
 
         return redirect()->route('categories.index')
             ->with('status', 'Catégorie créée.');
@@ -65,19 +71,28 @@ class CategoryController extends Controller
         return view('categories.edit', compact('category'));
     }
 
-    public function update(UpdateCategoryRequest $request, Category $category): RedirectResponse
+    public function update(UpdateCategoryRequest $request, Category $category, AuditLogger $audit): RedirectResponse
     {
-        $category->update($request->validated());
+        $audit->updateWithAudit(
+            $category->fill($request->validated()),
+            $request->user(),
+            AuditAction::CategoryUpdated,
+        );
 
         return redirect()->route('categories.index')
             ->with('status', 'Catégorie modifiée.');
     }
 
-    public function toggle(Category $category): RedirectResponse
+    public function toggle(Request $request, Category $category, AuditLogger $audit): RedirectResponse
     {
         Gate::authorize('update', $category);
 
-        $category->update(['is_active' => ! $category->is_active]);
+        $audit->toggleWithAudit(
+            $category,
+            $request->user(),
+            AuditAction::CategoryActivated,
+            AuditAction::CategoryDeactivated,
+        );
 
         return back()->with('status', $category->is_active
             ? 'Catégorie réactivée.'

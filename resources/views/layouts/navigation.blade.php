@@ -24,6 +24,11 @@
                     <x-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
                      Alertes
                     </x-nav-link>
+                    @can('viewAny', App\Models\AuditLog::class)
+                    <x-nav-link :href="route('audit.index')" :active="request()->routeIs('audit.*')">
+                        Audit
+                    </x-nav-link>
+                    @endcan
                     <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
                      Catégories
                     </x-nav-link>
@@ -94,6 +99,11 @@
             <x-responsive-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
              Alertes
             </x-responsive-nav-link>
+            @can('viewAny', App\Models\AuditLog::class)
+            <x-responsive-nav-link :href="route('audit.index')" :active="request()->routeIs('audit.*')">
+                Audit
+            </x-responsive-nav-link>
+            @endcan
             <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
              Catégories
             </x-responsive-nav-link>

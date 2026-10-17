@@ -1,11 +1,17 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Historique des mouvements
-            @if ($productFilter)
-                <span class="text-gray-500">— {{ $productFilter->name }}</span>
-            @endif
-        </h2>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                Historique des mouvements
+                @if ($productFilter)
+                    <span class="text-gray-500">— {{ $productFilter->name }}</span>
+                @endif
+            </h2>
+            @can('export-data')
+                <a href="{{ route('exports.movements', request()->query()) }}"
+                    class="rounded-md bg-gray-200 px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-300">Exporter (CSV)</a>
+            @endcan
+        </div>
     </x-slot>
 
     <div class="py-8">
