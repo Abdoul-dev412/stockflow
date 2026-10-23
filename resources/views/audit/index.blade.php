@@ -60,6 +60,7 @@
                                     'product' => route('products.show', $log->entity_id),
                                     'category' => route('categories.show', $log->entity_id),
                                     'supplier' => route('suppliers.show', $log->entity_id),
+                                    'user' => route('users.edit', $log->entity_id),
                                     default => null,
                                 } : null;
                             @endphp

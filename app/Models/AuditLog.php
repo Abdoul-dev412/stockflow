@@ -48,6 +48,7 @@ class AuditLog extends Model
             'supplier' => 'Fournisseur',
             'stock_movement' => 'Mouvement',
             'export' => 'Export',
+            'user' => 'Utilisateur',
             default => $this->entity_type,
         };
     }

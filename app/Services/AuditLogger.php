@@ -72,7 +72,8 @@ class AuditLogger
         $changes = [];
 
         foreach (array_keys($model->getDirty()) as $field) {
-            if ($field === 'updated_at') {
+            // Jamais de secret dans le journal : mot de passe, jeton, etc.
+            if ($field === 'updated_at' || in_array($field, $model->getHidden(), true)) {
                 continue;
             }
 

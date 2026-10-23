@@ -19,6 +19,12 @@ enum AuditAction: string
     case StockAdjustment = 'stock.adjustment';
     case StockCorrection = 'stock.correction';
     case DataExported = 'data.exported';
+    case UserCreated = 'user.created';
+    case UserUpdated = 'user.updated';
+    case UserRoleChanged = 'user.role_changed';
+    case UserActivated = 'user.activated';
+    case UserDeactivated = 'user.deactivated';
+    case UserPasswordReset = 'user.password_reset';
 
     public function label(): string
     {
@@ -38,6 +44,12 @@ enum AuditAction: string
             self::StockAdjustment => 'Ajustement de stock',
             self::StockCorrection => 'Correction de stock',
             self::DataExported => 'Export de données',
+            self::UserCreated => 'Compte créé',
+            self::UserUpdated => 'Compte modifié',
+            self::UserRoleChanged => 'Rôle modifié',
+            self::UserActivated => 'Compte réactivé',
+            self::UserDeactivated => 'Compte désactivé',
+            self::UserPasswordReset => 'Mot de passe réinitialisé',
         };
     }
 }

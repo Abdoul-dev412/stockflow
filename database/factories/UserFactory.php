@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'role' => \App\Enums\Role::Manager,
             'is_active' => true,
+            'must_change_password' => false,
         ];
     }
 
@@ -52,4 +53,9 @@ class UserFactory extends Factory
         {
             return $this->state(fn () => ['is_active' => false]);
      }
+
+     public function mustChangePassword(): static
+    {
+        return $this->state(fn () => ['must_change_password' => true]);
+    }
 }

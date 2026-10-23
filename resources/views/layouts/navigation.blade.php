@@ -29,6 +29,11 @@
                         Audit
                     </x-nav-link>
                     @endcan
+                    @can('viewAny', App\Models\User::class)
+                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                            Utilisateurs
+                        </x-nav-link>
+                    @endcan
                     <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
                      Catégories
                     </x-nav-link>
@@ -103,6 +108,11 @@
             <x-responsive-nav-link :href="route('audit.index')" :active="request()->routeIs('audit.*')">
                 Audit
             </x-responsive-nav-link>
+            @endcan
+            @can('viewAny', App\Models\User::class)
+                <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                    Utilisateurs
+                </x-responsive-nav-link>
             @endcan
             <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">
              Catégories

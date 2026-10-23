@@ -45,6 +45,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => \App\Enums\Role::class,
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
     public function isAdmin(): bool

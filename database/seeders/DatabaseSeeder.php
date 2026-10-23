@@ -23,7 +23,12 @@ class DatabaseSeeder extends Seeder
     //         'email' => 'test@example.com',
     //     ]);
     public function run(): void
-{
+    {
+        if (app()->isProduction()) {
+        $this->command?->error('Le seeder de démonstration ne doit jamais être exécuté en production.');
+
+        return;
+    }
     User::factory()->create([
         'name' => 'Admin Démo',
         'email' => 'admin@stockflow.test',

@@ -11,6 +11,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\UserController;
 
 
 Route::get('/', function () {
@@ -60,6 +61,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('stock-levels', [ExportController::class, 'stockLevels'])->name('stock-levels');
         Route::get('movements', [ExportController::class, 'movements'])->name('movements');
     });
-    });
+
+    Route::resource('users', UserController::class)->except(['show', 'destroy']);
+    Route::patch('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
+    Route::get('users/{user}/password', [UserController::class, 'editPassword'])->name('users.password.edit');
+    Route::put('users/{user}/password', [UserController::class, 'updatePassword'])->name('users.password.update');
+});
 
 require __DIR__.'/auth.php';

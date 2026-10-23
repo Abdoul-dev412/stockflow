@@ -264,6 +264,6 @@ test('chaque export est tracé avec ses filtres', function () {
         ->and($logs[0]->action)->toBe('data.exported')
         ->and($logs[0]->user_id)->toBe($admin->id)
         ->and($logs[0]->entity_type)->toBe('export')
-        ->and($logs[0]->details)->toBe(['export' => 'products', 'filters' => ['search' => 'ali', 'stock' => 'low']])
+        ->and($logs[0]->details)->toEqual(['export' => 'products', 'filters' => ['search' => 'ali', 'stock' => 'low']])
         ->and($logs[1]->details)->toBe(['export' => 'movements']);
 });

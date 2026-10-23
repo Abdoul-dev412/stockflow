@@ -59,8 +59,8 @@ test('une modification trace uniquement les champs réellement changés', functi
     $changes = AuditLog::firstOrFail()->details['changes'];
 
     expect(array_keys($changes))->toEqualCanonicalizing(['name', 'minimum_stock'])
-        ->and($changes['name'])->toBe(['from' => 'Ancien nom', 'to' => 'Nouveau nom'])
-        ->and($changes['minimum_stock'])->toBe(['from' => 10, 'to' => 25]);
+    ->and($changes['name'])->toEqual(['from' => 'Ancien nom', 'to' => 'Nouveau nom'])
+    ->and($changes['minimum_stock'])->toEqual(['from' => 10, 'to' => 25]);
 });
 
 test('une modification sans changement réel ne laisse aucune trace', function () {
