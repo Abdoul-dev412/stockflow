@@ -41,11 +41,23 @@ class DemoCatalogSeeder extends Seeder
             ['EMB-002', 'Carton de 12 plateaux', 'Emballages', $agro, 'unité', 1800, 75, 40],
         ];
 
+        // [numéro de lot, péremption dans N jours, quantité]
+        $lotPlans = [
+            'ALI-001' => [['ALI-2610-A', 90, 80], ['ALI-2611-B', 150, 40]],
+            'VAC-001' => [['NDV-2609', 20, 8], ['NDV-2611', 120, 6]],
+            'VAC-002' => [['GMB-2610', 12, 5]],
+            'VAC-003' => [['VIT-2612', 200, 22]],
+        ];
+
         $admin = User::where('email', 'admin@stockflow.test')->firstOrFail();
+        $manager = User::where('email', 'gestionnaire@stockflow.test')->firstOrFail();
         $service = app(StockMovementService::class);
+        $products = [];
 
         foreach ($rows as [$sku, $name, $category, $supplier, $unit, $price, $quantity, $minimum]) {
-            $product = Product::factory()->create([
+            $tracked = isset($lotPlans[$sku]);
+
+            $products[$sku] = $product = Product::factory()->create([
                 'sku' => $sku,
                 'name' => $name,
                 'category_id' => $categories[$category]->id,
@@ -54,9 +66,23 @@ class DemoCatalogSeeder extends Seeder
                 'purchase_price' => $price,
                 'quantity' => 0,
                 'minimum_stock' => $minimum,
+                'tracks_lots' => $tracked,
+                'is_perishable' => $tracked,
             ]);
 
-            if ($quantity > 0) {
+            if ($tracked) {
+                foreach ($lotPlans[$sku] as [$lotNumber, $days, $lotQuantity]) {
+                    $service->recordEntry(
+                        $product,
+                        $lotQuantity,
+                        $admin,
+                        comment: 'Stock initial (données de démonstration)',
+                        occurredAt: now()->subDays(30),
+                        lotNumber: $lotNumber,
+                        expiresAt: now()->addDays($days),
+                    );
+                }
+            } elseif ($quantity > 0) {
                 $service->recordEntry(
                     $product,
                     $quantity,

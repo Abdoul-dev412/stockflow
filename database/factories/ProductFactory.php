@@ -45,4 +45,13 @@ class ProductFactory extends Factory
     {
         return $this->state(fn () => ['is_active' => false]);
     }
+
+    public function tracked(bool $perishable = true): static
+    {
+        return $this->state(fn () => [
+            'tracks_lots' => true,
+            'is_perishable' => $perishable,
+            'quantity' => 0,
+        ]);
+    }
 }

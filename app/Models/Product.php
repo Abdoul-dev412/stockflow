@@ -20,7 +20,7 @@ class Product extends Model
         'sku', 'barcode', 'name', 'description',
         'category_id', 'supplier_id', 'unit',
         'purchase_price', 'sale_price', 'minimum_stock',
-        'tracks_lots', 'target_cover_days', 'is_active',
+        'tracks_lots','is_perishable', 'target_cover_days', 'is_active',
     ];
 
     protected function casts(): array
@@ -31,6 +31,7 @@ class Product extends Model
             'quantity' => 'integer',
             'minimum_stock' => 'integer',
             'tracks_lots' => 'boolean',
+            'is_perishable' => 'boolean',
             'target_cover_days' => 'integer',
             'is_active' => 'boolean',
         ];
@@ -132,5 +133,9 @@ class Product extends Model
             ->when($stock === 'normal', fn ($q) => $q->normalStock())
             ->when($stock === 'low', fn ($q) => $q->lowStock())
             ->when($stock === 'out', fn ($q) => $q->outOfStock());
+    }
+    public function lots(): HasMany
+    {
+        return $this->hasMany(StockLot::class);
     }
 }

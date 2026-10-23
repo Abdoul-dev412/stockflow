@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Services\StockMovementService;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Symfony\Component\Process\Process;
+use App\Models\StockLot;
+
 
 // Ces tests écrivent réellement en base (pas de transaction) : ils vident la base de test.
 uses(Tests\TestCase::class, DatabaseTruncation::class);
@@ -108,4 +110,27 @@ test('deux corrections simultanées du même mouvement : une seule réussit', fu
 
     expect($product->fresh()->quantity)->toBe(10);
     expect(StockMovement::where('corrects_movement_id', $original->id)->count())->toBe(1);
+});
+
+test('cinq sorties simultanées sur un produit à lots : les lots et le stock restent cohérents', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->tracked()->create();
+    $service = app(StockMovementService::class);
+
+    $service->recordEntry($product, 6, $user, lotNumber: 'PREMIER', expiresAt: now()->addDays(10));
+    $service->recordEntry($product, 4, $user, lotNumber: 'SECOND', expiresAt: now()->addDays(20));
+
+    $results = runStockWorkers(array_fill(0, 5, [
+        'action' => 'exit', 'user' => $user->id, 'a' => $product->id, 'b' => 3,
+    ]));
+
+    $counts = collect($results)->pluck('result')->countBy();
+
+    expect($counts->get('ok', 0))->toBe(3)
+        ->and($counts->get('insufficient', 0))->toBe(2)
+        ->and($counts->get('error', 0))->toBe(0);
+
+    // 9 unités sorties en FEFO : le premier lot est vidé, il reste 1 unité dans le second.
+    expect(StockLot::orderBy('id')->pluck('quantity_remaining')->all())->toBe([0, 1]);
+    expect($product->fresh()->quantity)->toBe(1);
 });

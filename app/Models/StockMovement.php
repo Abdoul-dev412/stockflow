@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StockMovement extends Model
 {
@@ -89,5 +90,9 @@ class StockMovement extends Model
             ->when($filters['user'] ?? null, fn ($q, $id) => $q->where('user_id', $id))
             ->when($filters['from'] ?? null, fn ($q, $date) => $q->where('occurred_at', '>=', Carbon::parse($date)->startOfDay()))
             ->when($filters['to'] ?? null, fn ($q, $date) => $q->where('occurred_at', '<=', Carbon::parse($date)->endOfDay()));
+    }
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(MovementLotAllocation::class, 'movement_id');
     }
 }
