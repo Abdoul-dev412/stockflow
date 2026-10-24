@@ -65,21 +65,25 @@ class ProductController extends Controller
             ->with('status', 'Produit créé. Son stock initial est à 0.');
     }
 
-    public function show(Product $product): View
-{
-    Gate::authorize('view', $product);
+   public function show(Product $product): View
+    {
+        Gate::authorize('view', $product);
 
-    $product->load(['category', 'supplier']);
+        $product->load(['category', 'supplier']);
 
-    $movements = $product->movements()
-        ->with('user:id,name')
-        ->orderByDesc('occurred_at')
-        ->orderByDesc('id')
-        ->limit(10)
-        ->get();
+        $movements = $product->movements()
+            ->with('user:id,name')
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get();
 
-    return view('products.show', compact('product', 'movements'));
-}
+        $lots = $product->tracks_lots
+            ? $product->lots()->inStock()->fefo()->get()
+            : collect();
+
+        return view('products.show', compact('product', 'movements', 'lots'));
+    }
     public function edit(Product $product): View
     {
         Gate::authorize('update', $product);
@@ -128,6 +132,7 @@ class ProductController extends Controller
                     ->when($product?->supplier_id, fn ($q) => $q->orWhere('id', $product->supplier_id)))
                 ->orderBy('name')
                 ->get(['id', 'name', 'is_active']),
+            'lotsLocked' => $product !== null && $product->movements()->exists(),
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Enums\MovementType;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Models\StockLot;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -34,9 +35,10 @@ class DashboardController extends Controller
         $byType = collect(MovementType::cases())
             ->mapWithKeys(fn (MovementType $type) => [$type->value => (int) ($perType[$type->value] ?? 0)])
             ->all();
-
+        $expiry = StockLot::expiryCounts();
         return view('dashboard', [
             'days' => $days,
+            'expiryDays' => StockLot::EXPIRY_WARNING_DAYS,
             'types' => MovementType::cases(),
             'byType' => $byType,
             'stats' => [
@@ -46,6 +48,8 @@ class DashboardController extends Controller
                 'categories' => Category::where('is_active', true)->count(),
                 'suppliers' => Supplier::where('is_active', true)->count(),
                 'movements' => array_sum($byType),
+                'expired_lots' => $expiry['expired'],
+                'expiring_lots' => $expiry['soon'],
             ],
             'restock' => Product::query()
                 ->active()

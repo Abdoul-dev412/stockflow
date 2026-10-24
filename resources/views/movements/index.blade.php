@@ -98,6 +98,14 @@
                                     @if ($movement->reason)
                                         <div class="text-xs text-gray-500">{{ $movement->reason }}</div>
                                     @endif
+                                    @if ($movement->allocations->isNotEmpty())
+                                        <div class="text-xs text-gray-500">
+                                            Lots :
+                                            @foreach ($movement->allocations as $allocation)
+                                                {{ $allocation->lot->lot_number }} ({{ $allocation->quantity > 0 ? '+' : '' }}{{ $allocation->quantity }})@if (! $loop->last), @endif
+                                            @endforeach
+                                        </div>
+                                    @endif
                                     @if ($movement->corrects_movement_id)
                                         <div class="text-xs text-purple-700">Corrige le mouvement n° {{ $movement->corrects_movement_id }}</div>
                                     @endif

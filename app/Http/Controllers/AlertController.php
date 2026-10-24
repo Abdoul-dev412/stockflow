@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\StockLot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -46,6 +47,18 @@ class AlertController extends Controller
             'supplierId' => $supplierId,
             'categories' => Category::orderBy('name')->get(['id', 'name']),
             'suppliers' => Supplier::orderBy('name')->get(['id', 'name']),
+            'expiry' => StockLot::expiryCounts(),
+            'expiryDays' => StockLot::EXPIRY_WARNING_DAYS,
+            'expiringLots' => StockLot::query()
+                ->inStock()
+                ->whereNotNull('expires_at')
+                ->ofActiveProducts()
+                ->where('expires_at', '<=', today()->addDays(StockLot::EXPIRY_WARNING_DAYS)->toDateString())
+                ->with('product:id,sku,name')
+                ->orderBy('expires_at')
+                ->orderBy('id')
+                ->limit(10)
+                ->get(),
         ]);
     }
 }

@@ -182,6 +182,57 @@ class StockMovementService
         );
     }
 
+        /**
+     * Retire d'un coup tous les lots expirés d'un produit : un seul mouvement de sortie
+     * (motif « Péremption »), réparti sur chaque lot expiré.
+     */
+    public function removeExpiredLots(Product $product, User $user, ?CarbonInterface $occurredAt = null): StockMovement
+    {
+        $this->assertActiveUser($user);
+
+        $movement = $this->applyLocked(
+            $product->getKey(),
+            $user,
+            requireActiveProduct: true,
+            plan: function (Product $locked) use ($occurredAt) {
+                if (! $locked->tracks_lots) {
+                    throw new StockMovementException("Ce produit n'est pas suivi par lots.");
+                }
+
+                $expired = StockLot::query()
+                    ->where('product_id', $locked->id)
+                    ->inStock()
+                    ->fefo()
+                    ->lockForUpdate()
+                    ->get()
+                    ->filter(fn (StockLot $lot) => $lot->isExpired());
+
+                if ($expired->isEmpty()) {
+                    throw new StockMovementException('Aucun lot expiré à retirer pour ce produit.');
+                }
+
+                $total = (int) $expired->sum('quantity_remaining');
+
+                $effects = $expired
+                    ->map(fn (StockLot $lot) => ['lot' => $lot, 'new' => null, 'delta' => -$lot->quantity_remaining])
+                    ->values()
+                    ->all();
+
+                return $this->plan(
+                    MovementType::Exit,
+                    MovementReason::Expiry,
+                    $total,
+                    $locked->quantity - $total,
+                    'Retrait des lots expirés',
+                    $occurredAt,
+                    lotEffects: $effects,
+                );
+            },
+        );
+
+        return $this->refreshProduct($product, $movement);
+}
+
     private function recordSimple(
         MovementType $type,
         Product $product,

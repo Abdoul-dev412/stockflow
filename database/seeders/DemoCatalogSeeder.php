@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\StockMovementService;
+use App\Models\StockLot;
 use Illuminate\Database\Seeder;
 
 class DemoCatalogSeeder extends Seeder
@@ -92,5 +93,10 @@ class DemoCatalogSeeder extends Seeder
                 );
             }
         }
+        // Démonstration : un lot de vaccin arrivé à péremption (le service refuse d'enregistrer une entrée périmée).
+        StockLot::where('lot_number', 'NDV-2609')
+            ->update([
+                'expires_at' => today()->subDays(3)->toDateString(),
+            ]);
     }
 }

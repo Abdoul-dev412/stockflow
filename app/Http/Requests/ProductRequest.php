@@ -29,9 +29,19 @@ class ProductRequest extends FormRequest
             $barcode = trim($barcode);
         }
 
+        // Dès que le produit a un mouvement, le suivi par lots ne peut plus changer :
+        // on ignore la valeur envoyée et on garde celle de la base.
+        $product = $this->route('product');
+        $locked = $product !== null && $product->movements()->exists();
+
+        $tracks = $locked ? (bool) $product->tracks_lots : $this->boolean('tracks_lots');
+        $perishable = $tracks && ($locked ? (bool) $product->is_perishable : $this->boolean('is_perishable'));
+
         $this->merge([
             'sku' => is_string($sku) ? mb_strtoupper(trim($sku)) : $sku,
             'barcode' => $barcode === '' ? null : $barcode,
+            'tracks_lots' => $tracks,
+            'is_perishable' => $perishable,
         ]);
     }
 
@@ -68,6 +78,8 @@ class ProductRequest extends FormRequest
             'purchase_price' => ['required', 'numeric', 'min:0', 'max:9999999999.99', 'decimal:0,2'],
             'sale_price' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', 'decimal:0,2'],
             'minimum_stock' => ['required', 'integer', 'min:0', 'max:1000000'],
+            'tracks_lots' => ['boolean'],
+            'is_perishable' => ['boolean'],
         ];
     }
 

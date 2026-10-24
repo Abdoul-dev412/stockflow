@@ -31,6 +31,10 @@
                     :href="route('alerts.index', ['level' => 'out'])" />
                 <x-stat-card :label="'Mouvements ('.$days.' derniers jours)'" :value="$stats['movements']"
                     :href="route('movements.index')" />
+                <x-stat-card label="Lots expirés" :value="$stats['expired_lots']" tone="red"
+                    :href="route('expiries.index')" />
+                <x-stat-card :label="'Lots qui expirent sous '.$expiryDays.' jours'" :value="$stats['expiring_lots']" tone="amber"
+                    :href="route('expiries.index')" />
             </div>
 
             <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">

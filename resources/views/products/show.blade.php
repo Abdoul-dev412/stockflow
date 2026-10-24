@@ -57,6 +57,63 @@
             </div>
 
             <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-4">
+                
+        @if ($product->tracks_lots)
+        <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="font-medium text-gray-900">
+                    Lots en stock
+                    @if ($product->is_perishable)
+                        <span class="text-sm font-normal text-gray-500">· périssable</span>
+                    @endif
+                </h3>
+
+                @can('create', App\Models\StockMovement::class)
+                    @if ($product->is_active && $lots->contains(fn ($lot) => $lot->isExpired()))
+                        <form method="POST" action="{{ route('expiries.remove', $product) }}"
+                            onsubmit="return confirm('Retirer du stock tous les lots expirés de ce produit ?')">
+                            @csrf
+                            <button class="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700">
+                                Retirer les lots expirés
+                            </button>
+                        </form>
+                    @endif
+                @endcan
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left font-medium text-gray-600">Lot</th>
+                            <th class="px-4 py-2 text-left font-medium text-gray-600">Péremption</th>
+                            <th class="px-4 py-2 text-left font-medium text-gray-600">Quantité</th>
+                            <th class="px-4 py-2 text-left font-medium text-gray-600">Reçu le</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @forelse ($lots as $lot)
+                            <tr>
+                                <td class="px-4 py-2">{{ $lot->lot_number }}</td>
+                                <td class="px-4 py-2">
+                                    {{ $lot->expires_at?->format('d/m/Y') ?? '—' }}
+                                    <x-lot-expiry-badge :lot="$lot" />
+                                </td>
+                                <td class="px-4 py-2">{{ $lot->quantity_remaining }} {{ $product->unit }}</td>
+                                <td class="px-4 py-2">{{ $lot->received_at->format('d/m/Y') }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="px-4 py-4 text-center text-gray-500">Aucun lot en stock.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+    
+
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h3 class="font-medium text-gray-900">Derniers mouvements</h3>
 

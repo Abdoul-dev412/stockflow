@@ -88,7 +88,7 @@ class ExportController extends Controller
         $this->trace($audit, $request, 'movements', $filters);
 
         $rows = StockMovement::query()
-            ->with(['product', 'user:id,name'])
+            ->with(['product', 'user:id,name', 'allocations.lot:id,lot_number'])
             ->filtered($filters)
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
@@ -107,12 +107,15 @@ class ExportController extends Controller
                 $movement->user->name,
                 $movement->status->label(),
                 $movement->corrects_movement_id,
+                $movement->allocations
+                ->map(fn ($allocation) => $allocation->lot->lot_number.':'.$allocation->quantity)
+                ->implode(' | '),
             ]);
 
         return CsvExport::download('mouvements', [
             "Date de l'opération", "Date d'enregistrement", 'SKU', 'Produit', 'Type', 'Motif',
             'Commentaire', 'Variation', 'Stock avant', 'Stock après', 'Utilisateur', 'Statut',
-            'Corrige le mouvement n°',
+            'Corrige le mouvement n°', 'Lots',
         ], $rows);
     }
 

@@ -5,11 +5,15 @@
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <x-stat-card label="Produits en stock faible" :value="$counts['low']" tone="amber"
                     :href="route('alerts.index', ['level' => 'low'])" />
                 <x-stat-card label="Produits en rupture" :value="$counts['out']" tone="red"
                     :href="route('alerts.index', ['level' => 'out'])" />
+                <x-stat-card label="Lots expirés" :value="$expiry['expired']" tone="red"
+                    :href="route('expiries.index')" />
+                <x-stat-card :label="'Lots qui expirent sous '.$expiryDays.' jours'" :value="$expiry['soon']" tone="amber"
+                    :href="route('expiries.index')" />
             </div>
 
             @if ($errors->any())
@@ -98,6 +102,27 @@
             </div>
 
             {{ $products->links() }}
+
+            <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-3">
+                <h3 class="font-medium text-gray-900">Péremptions à surveiller</h3>
+
+                @forelse ($expiringLots as $lot)
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3 text-sm">
+                        <div>
+                            <a href="{{ route('products.show', $lot->product) }}"
+                                class="text-indigo-600 hover:underline">{{ $lot->product->name }}</a>
+                            <div class="text-xs text-gray-500">Lot {{ $lot->lot_number }} · {{ $lot->quantity_remaining }} en stock</div>
+                        </div>
+                        <x-lot-expiry-badge :lot="$lot" />
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-500">Aucun lot n'expire dans les {{ $expiryDays }} prochains jours.</p>
+                @endforelse
+
+                <a href="{{ route('expiries.index') }}" class="text-sm text-indigo-600 hover:underline">
+                    Voir toutes les péremptions →
+                </a>
+            </div>
         </div>
     </div>
 </x-app-layout>

@@ -12,6 +12,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ExpiryController;
 
 
 Route::get('/', function () {
@@ -66,6 +67,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
     Route::get('users/{user}/password', [UserController::class, 'editPassword'])->name('users.password.edit');
     Route::put('users/{user}/password', [UserController::class, 'updatePassword'])->name('users.password.update');
+
+    Route::get('expiries', [ExpiryController::class, 'index'])->name('expiries.index');
+    Route::post('products/{product}/expired-lots', [ExpiryController::class, 'remove'])->name('expiries.remove');
 });
 
 require __DIR__.'/auth.php';

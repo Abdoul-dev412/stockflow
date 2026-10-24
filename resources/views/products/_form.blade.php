@@ -89,6 +89,40 @@
             class="mt-1 block w-full" :value="old('sale_price', $product->sale_price ?? '')" />
         <x-input-error :messages="$errors->get('sale_price')" class="mt-2" />
     </div>
+
+    <div class="sm:col-span-2 space-y-2 rounded-md bg-gray-50 p-4"
+        x-data="{ tracks: @js((bool) old('tracks_lots', $product->tracks_lots ?? false)) }">
+        <p class="text-sm font-medium text-gray-700">Suivi par lots</p>
+
+        @if ($lotsLocked ?? false)
+            <p class="text-sm text-gray-600">
+                Ce réglage est verrouillé : ce produit a déjà des mouvements.
+                Il est actuellement
+                <strong>{{ $product->tracks_lots ? 'suivi par lots' : 'non suivi par lots' }}</strong>{{ $product->tracks_lots ? ($product->is_perishable ? ', périssable' : ', non périssable') : '' }}.
+            </p>
+        @else
+            <input type="hidden" name="tracks_lots" value="0">
+            <label class="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" name="tracks_lots" value="1" x-model="tracks"
+                    class="rounded border-gray-300 text-indigo-600 shadow-sm">
+                Suivre ce produit par lots (numéro de lot à chaque entrée, sorties en FEFO)
+            </label>
+
+            <div x-show="tracks" class="ml-6">
+                <input type="hidden" name="is_perishable" value="0">
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" name="is_perishable" value="1"
+                        @checked(old('is_perishable', $product->is_perishable ?? false))
+                        class="rounded border-gray-300 text-indigo-600 shadow-sm">
+                    Produit périssable : la date de péremption est obligatoire
+                </label>
+            </div>
+
+            <p class="text-xs text-gray-500">
+                Ce choix ne pourra plus être modifié dès le premier mouvement de stock.
+            </p>
+        @endif
+    </div>
 </div>
 
 <div class="mt-6 flex items-center gap-3">
