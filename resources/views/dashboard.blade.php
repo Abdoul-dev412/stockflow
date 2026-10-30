@@ -35,6 +35,8 @@
                     :href="route('expiries.index')" />
                 <x-stat-card :label="'Lots qui expirent sous '.$expiryDays.' jours'" :value="$stats['expiring_lots']" tone="amber"
                     :href="route('expiries.index')" />
+                <x-stat-card :label="'Couverture critique (moins de '.config('stockflow.coverage.critical_days').' jours)'"
+                    :value="$stats['critical_coverage']" tone="red" :href="route('replenishment.index')" />
             </div>
 
             <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">

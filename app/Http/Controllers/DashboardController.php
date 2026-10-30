@@ -9,6 +9,8 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\StockLot;
 use App\Models\Supplier;
+use App\Enums\CoverageLevel;
+use App\Services\CoverageCalculator;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -16,7 +18,7 @@ class DashboardController extends Controller
 {
     private const PERIODS = [7, 30, 90];
 
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, CoverageCalculator $coverage): View
     {
         $days = in_array((int) $request->query('days'), self::PERIODS, true)
             ? (int) $request->query('days')
@@ -36,6 +38,11 @@ class DashboardController extends Controller
             ->mapWithKeys(fn (MovementType $type) => [$type->value => (int) ($perType[$type->value] ?? 0)])
             ->all();
         $expiry = StockLot::expiryCounts();
+
+        $criticalCoverage = $coverage->forActiveProducts()
+        ->filter(fn (array $row) => $row['coverage']->level === CoverageLevel::Critical)
+        ->count();
+        
         return view('dashboard', [
             'days' => $days,
             'expiryDays' => StockLot::EXPIRY_WARNING_DAYS,
@@ -50,6 +57,7 @@ class DashboardController extends Controller
                 'movements' => array_sum($byType),
                 'expired_lots' => $expiry['expired'],
                 'expiring_lots' => $expiry['soon'],
+                'critical_coverage' => $criticalCoverage,
             ],
             'restock' => Product::query()
                 ->active()

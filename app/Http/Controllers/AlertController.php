@@ -6,6 +6,8 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\StockLot;
+use App\Enums\CoverageLevel;
+use App\Services\CoverageCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -13,7 +15,7 @@ use Illuminate\View\View;
 
 class AlertController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, CoverageCalculator $coverage): View
     {
         Gate::authorize('viewAny', Product::class);
 
@@ -49,6 +51,11 @@ class AlertController extends Controller
             'suppliers' => Supplier::orderBy('name')->get(['id', 'name']),
             'expiry' => StockLot::expiryCounts(),
             'expiryDays' => StockLot::EXPIRY_WARNING_DAYS,
+            'criticalCoverage' => $coverage->forActiveProducts()
+                ->filter(fn (array $row) => $row['coverage']->level === CoverageLevel::Critical)
+                ->sortBy(fn (array $row) => $row['coverage']->days)
+                ->take(10)
+                ->values(),
             'expiringLots' => StockLot::query()
                 ->inStock()
                 ->whereNotNull('expires_at')

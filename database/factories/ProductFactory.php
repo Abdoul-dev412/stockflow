@@ -28,6 +28,7 @@ class ProductFactory extends Factory
             'quantity' => fake()->numberBetween(20, 200),
             'minimum_stock' => 10,
             'is_active' => true,
+            'target_cover_days' => 30,
         ];
     }
 

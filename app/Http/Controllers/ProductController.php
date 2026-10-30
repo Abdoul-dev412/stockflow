@@ -6,6 +6,7 @@ use App\Http\Requests\ProductRequest;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Services\CoverageCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +19,7 @@ class ProductController extends Controller
 {
     private const SORTABLE = ['name', 'sku', 'quantity', 'purchase_price'];
 
-    public function index(Request $request): View
+    public function index(Request $request, CoverageCalculator $coverage): View
     {
         Gate::authorize('viewAny', Product::class);
 
@@ -37,6 +38,7 @@ class ProductController extends Controller
 
         return view('products.index', [
             'products' => $products,
+            'coverages' => $coverage->forProducts($products->getCollection()),
             'categories' => Category::orderBy('name')->get(['id', 'name']),
             'status' => $filters['status'],
             'stock' => $filters['stock'],
@@ -45,7 +47,6 @@ class ProductController extends Controller
             'direction' => $direction,
         ]);
     }
-
     public function create(): View
     {
         Gate::authorize('create', Product::class);
@@ -65,7 +66,7 @@ class ProductController extends Controller
             ->with('status', 'Produit créé. Son stock initial est à 0.');
     }
 
-   public function show(Product $product): View
+   public function show(Product $product, CoverageCalculator $coverage): View
     {
         Gate::authorize('view', $product);
 
@@ -82,7 +83,12 @@ class ProductController extends Controller
             ? $product->lots()->inStock()->fefo()->get()
             : collect();
 
-        return view('products.show', compact('product', 'movements', 'lots'));
+        return view('products.show', [
+            'product' => $product,
+            'movements' => $movements,
+            'lots' => $lots,
+            'coverage' => $coverage->forProduct($product),
+        ]);
     }
     public function edit(Product $product): View
     {

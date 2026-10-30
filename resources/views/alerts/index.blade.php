@@ -102,6 +102,40 @@
             </div>
 
             {{ $products->links() }}
+            
+            <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-3">
+                <h3 class="font-medium text-gray-900">
+                    Couverture critique
+                    <span class="text-sm font-normal text-gray-500">
+                        · moins de {{ config('stockflow.coverage.critical_days') }} jours de stock
+                    </span>
+                </h3>
+
+                @forelse ($criticalCoverage as $row)
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3 text-sm">
+                        <div>
+                            <a href="{{ route('products.show', $row['product']) }}"
+                                class="text-indigo-600 hover:underline">{{ $row['product']->name }}</a>
+                            <div class="text-xs text-gray-500">
+                                {{ $row['product']->sku }} · {{ $row['coverage']->usableQuantity }} {{ $row['product']->unit }} ·
+                                {{ number_format($row['coverage']->dailyConsumption, 2, ',', ' ') }} / jour
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <x-coverage-badge :coverage="$row['coverage']" />
+                            <div class="text-xs text-gray-500">
+                                Rupture estimée le {{ $row['coverage']->stockoutDate?->format('d/m/Y') ?? '—' }}
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-500">Aucun produit en couverture critique.</p>
+                @endforelse
+
+                <a href="{{ route('replenishment.index') }}" class="text-sm text-indigo-600 hover:underline">
+                    Préparer le réapprovisionnement →
+                </a>
+            </div>
 
             <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-3">
                 <h3 class="font-medium text-gray-900">Péremptions à surveiller</h3>

@@ -30,6 +30,41 @@
                 <p class="mt-2 text-sm text-gray-500">Seuil minimal : {{ $product->minimum_stock }}</p>
             </div>
 
+            <div class="bg-white shadow-sm sm:rounded-lg p-6 space-y-2">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h3 class="font-medium text-gray-900">Couverture du stock</h3>
+                    <x-coverage-badge :coverage="$coverage" />
+                </div>
+
+                @if ($coverage->isDetermined())
+                    <div class="grid gap-2 text-sm text-gray-700 sm:grid-cols-3">
+                        <div>
+                            <span class="text-gray-500">Consommation moyenne :</span>
+                            {{ number_format($coverage->dailyConsumption, 2, ',', ' ') }} {{ $product->unit }} / jour
+                        </div>
+                        <div><span class="text-gray-500">Couverture :</span> {{ $coverage->daysLabel() }}</div>
+                        <div>
+                            <span class="text-gray-500">Rupture estimée :</span>
+                            {{ $coverage->stockoutDate?->format('d/m/Y') ?? 'au-delà de 10 ans' }}
+                        </div>
+                    </div>
+                @else
+                    <p class="text-sm text-gray-600">{{ $coverage->note }}</p>
+                @endif
+
+                @if ($coverage->usableQuantity !== $product->quantity)
+                    <p class="text-xs text-amber-700">
+                        Calculée sur {{ $coverage->usableQuantity }} {{ $product->unit }} utilisables :
+                        {{ $product->quantity - $coverage->usableQuantity }} en lots expirés exclus.
+                    </p>
+                @endif
+
+                <p class="text-xs text-gray-500">
+                    Ventes et consommation interne, moyennées sur {{ config('stockflow.coverage.window_days') }} jours au maximum.
+                    Pertes, casses et péremptions exclues. Couverture cible : {{ $product->target_cover_days }} jours.
+                </p>
+            </div>
+
             <div class="bg-white shadow-sm sm:rounded-lg p-6 grid gap-3 sm:grid-cols-2 text-sm text-gray-700">
                 <div><span class="text-gray-500">SKU :</span> {{ $product->sku }}</div>
                 <div><span class="text-gray-500">Code-barres :</span> {{ $product->barcode ?: '—' }}</div>

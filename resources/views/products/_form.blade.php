@@ -77,6 +77,16 @@
     </div>
 
     <div>
+        <x-input-label for="target_cover_days" value="Couverture cible (jours)" />
+        <x-text-input id="target_cover_days" name="target_cover_days" type="number" min="1" max="365" step="1"
+            class="mt-1 block w-full" :value="old('target_cover_days', $product->target_cover_days ?? 30)" required />
+        <p class="mt-1 text-xs text-gray-500">
+            Nombre de jours de consommation à couvrir après une livraison.
+        </p>
+        <x-input-error :messages="$errors->get('target_cover_days')" class="mt-2" />
+    </div>
+
+    <div>
         <x-input-label for="purchase_price" value="Prix d'achat unitaire" />
         <x-text-input id="purchase_price" name="purchase_price" type="number" min="0" step="0.01"
             class="mt-1 block w-full" :value="old('purchase_price', $product->purchase_price ?? '')" required />

@@ -13,7 +13,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExpiryController;
-
+use App\Http\Controllers\ReplenishmentController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -70,6 +70,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('expiries', [ExpiryController::class, 'index'])->name('expiries.index');
     Route::post('products/{product}/expired-lots', [ExpiryController::class, 'remove'])->name('expiries.remove');
+
+    Route::get('replenishment', [ReplenishmentController::class, 'index'])->name('replenishment.index');
+    Route::post('replenishment/{supplier}', [ReplenishmentController::class, 'prepare'])->name('replenishment.prepare');
 });
 
 require __DIR__.'/auth.php';

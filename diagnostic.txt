@@ -1,0 +1,40 @@
+array:3 [
+  "window_days" => 10
+  "critical_days" => 7
+  "attention_days" => 15
+] // tests\Feature\CoverageCalculatorTest.php:208
+array:4 [
+  "critical_days" => 3
+  "attention_days" => 5
+  "coverage_days" => 2.1666666666667
+  "coverage_level" => "critical"
+] // tests\Feature\CoverageCalculatorTest.php:220
+
+   FAIL  Tests\Feature\CoverageCalculatorTest
+  ⨯ la fenêtre et les seuils sont configurables                                                                   11.02s  
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\CoverageCalculatorTest > la fenêtre et les seuils sont configurables                             
+  Failed asserting that two variables reference the same object.
+--- Expected
++++ Actual
+@@ @@
+-App\Enums\CoverageLevel Enum #10310 (Comfortable, 'comfortable')
++App\Enums\CoverageLevel Enum #10285 (Critical, 'critical')
+
+  at tests\Feature\CoverageCalculatorTest.php:226
+    222▕         'attention_days' => config('stockflow.coverage.attention_days'),
+    223▕         'coverage_days' => coverageOf($candidate)->days,
+    224▕         'coverage_level' => coverageOf($candidate)->level->value,
+    225▕     ]);
+  ➜ 226▕     expect(coverageOf($candidate)->level)->toBe(CoverageLevel::Comfortable);
+    227▕ });
+    228▕ 
+    229▕ test('le calcul de plusieurs produits est cohérent avec le calcul unitaire, en deux requêtes', function () {
+    230▕     $products = collect([0, 5, 13, 14, 29, 30, 200])->map(fn (int $quantity) => coverageProduct($quantity));
+
+  1   tests\Feature\CoverageCalculatorTest.php:226
+
+
+  Tests:    1 failed (4 assertions)
+  Duration: 13.35s
+

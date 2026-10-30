@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\StockMovementService;
 use App\Models\StockLot;
 use Illuminate\Database\Seeder;
+use App\Enums\MovementReason;
 
 class DemoCatalogSeeder extends Seeder
 {
@@ -98,5 +99,32 @@ class DemoCatalogSeeder extends Seeder
             ->update([
                 'expires_at' => today()->subDays(3)->toDateString(),
             ]);
+        
+        // [sku => total vendu sur les 27 derniers jours]
+        $consumption = ['ALI-002' => 90, 'ALI-003' => 60, 'MAT-001' => 30, 'MAT-002' => 20, 'EMB-001' => 3000, 'EMB-002' => 300];
+        $saleDays = range(27, 3, -3);
+
+        foreach ($consumption as $sku => $sold) {
+            $product = $products[$sku];
+
+            $service->recordEntry(
+                $product, $sold, $admin,
+                comment: 'Stock antérieur (données de démonstration)',
+                occurredAt: now()->subDays(40),
+            );
+
+            $chunk = intdiv($sold, count($saleDays));
+            $remainder = $sold - $chunk * count($saleDays);
+
+            foreach ($saleDays as $index => $day) {
+                $service->recordExit(
+                    $product,
+                    $chunk + ($index === count($saleDays) - 1 ? $remainder : 0),
+                    $admin,
+                    $index % 4 === 3 ? MovementReason::InternalUse : MovementReason::Sale,
+                    occurredAt: now()->subDays($day),
+                );
+            }
+        }
     }
 }

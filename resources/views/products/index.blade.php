@@ -67,6 +67,7 @@
                             <th class="px-4 py-3 text-left font-medium text-gray-600">Catégorie</th>
                             <x-sortable-th column="quantity" label="Quantité" :sort="$sort" :direction="$direction" />
                             <th class="px-4 py-3 text-left font-medium text-gray-600">Niveau</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-600">Couverture</th>
                             <x-sortable-th column="purchase_price" label="Prix d'achat" :sort="$sort" :direction="$direction" />
                             <th class="px-4 py-3 text-left font-medium text-gray-600">Statut</th>
                             <th class="px-4 py-3"></th>
@@ -83,6 +84,7 @@
                                 <td class="px-4 py-3">{{ $product->category->name }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap">{{ $product->quantity }} {{ $product->unit }}</td>
                                 <td class="px-4 py-3"><x-stock-badge :status="$product->stockStatus()" /></td>
+                                <td class="px-4 py-3 whitespace-nowrap"><x-coverage-badge :coverage="$coverages[$product->id]" /></td>
                                 <td class="px-4 py-3 whitespace-nowrap">{{ number_format($product->purchase_price, 2, ',', ' ') }}</td>
                                 <td class="px-4 py-3">
                                     @if ($product->is_active)
@@ -109,7 +111,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-4 py-6 text-center text-gray-500">
+                                <td colspan="9" class="px-4 py-6 text-center text-gray-500">
                                     Aucun produit trouvé.
                                 </td>
                             </tr>

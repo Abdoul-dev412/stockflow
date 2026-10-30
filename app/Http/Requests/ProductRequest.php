@@ -37,11 +37,17 @@ class ProductRequest extends FormRequest
         $tracks = $locked ? (bool) $product->tracks_lots : $this->boolean('tracks_lots');
         $perishable = $tracks && ($locked ? (bool) $product->is_perishable : $this->boolean('is_perishable'));
 
+        $target = $this->input('target_cover_days');
+
         $this->merge([
             'sku' => is_string($sku) ? mb_strtoupper(trim($sku)) : $sku,
             'barcode' => $barcode === '' ? null : $barcode,
             'tracks_lots' => $tracks,
             'is_perishable' => $perishable,
+            // Champ absent ou vide : on garde la valeur actuelle du produit, ou 30 jours à la création.
+            'target_cover_days' => ($target === null || $target === '')
+                ? ($product?->target_cover_days ?? 30)
+                : $target,
         ]);
     }
 
@@ -80,6 +86,7 @@ class ProductRequest extends FormRequest
             'minimum_stock' => ['required', 'integer', 'min:0', 'max:1000000'],
             'tracks_lots' => ['boolean'],
             'is_perishable' => ['boolean'],
+            'target_cover_days' => ['required', 'integer', 'min:1', 'max:365'],
         ];
     }
 
@@ -104,6 +111,10 @@ class ProductRequest extends FormRequest
             'minimum_stock.required' => 'Le seuil minimal est obligatoire.',
             'minimum_stock.integer' => 'Le seuil minimal doit être un nombre entier.',
             'minimum_stock.min' => 'Le seuil minimal ne peut pas être négatif.',
+            'target_cover_days.required' => 'La couverture cible est obligatoire.',
+            'target_cover_days.integer' => 'La couverture cible doit être un nombre entier de jours.',
+            'target_cover_days.min' => 'La couverture cible doit être d\'au moins 1 jour.',
+            'target_cover_days.max' => 'La couverture cible ne peut pas dépasser 365 jours.',
         ];
     }
 }

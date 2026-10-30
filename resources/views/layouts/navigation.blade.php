@@ -24,6 +24,9 @@
                     <x-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
                      Alertes
                     </x-nav-link>
+                    <x-nav-link :href="route('replenishment.index')" :active="request()->routeIs('replenishment.*')">
+                     Réapprovisionnement
+                    </x-nav-link>
                     @can('viewAny', App\Models\AuditLog::class)
                     <x-nav-link :href="route('audit.index')" :active="request()->routeIs('audit.*')">
                         Audit
@@ -103,6 +106,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
              Alertes
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('replenishment.index')" :active="request()->routeIs('replenishment.*')">
+                Réapprovisionnement
             </x-responsive-nav-link>
             @can('viewAny', App\Models\AuditLog::class)
             <x-responsive-nav-link :href="route('audit.index')" :active="request()->routeIs('audit.*')">
