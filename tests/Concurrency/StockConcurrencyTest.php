@@ -8,6 +8,8 @@ use App\Services\StockMovementService;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Symfony\Component\Process\Process;
 use App\Models\StockLot;
+use App\Models\AuditLog;
+use App\Services\IntegrityVerifier;
 
 
 // Ces tests écrivent réellement en base (pas de transaction) : ils vident la base de test.
@@ -133,4 +135,21 @@ test('cinq sorties simultanées sur un produit à lots : les lots et le stock re
     // 9 unités sorties en FEFO : le premier lot est vidé, il reste 1 unité dans le second.
     expect(StockLot::orderBy('id')->pluck('quantity_remaining')->all())->toBe([0, 1]);
     expect($product->fresh()->quantity)->toBe(1);
+});
+
+test("cinq écritures d'audit simultanées gardent la chaîne linéaire et vérifiable", function () {
+    $user = User::factory()->admin()->create();
+
+    $results = runStockWorkers(array_map(
+        fn (int $i) => ['action' => 'audit', 'user' => $user->id, 'a' => $i],
+        range(1, 5),
+    ));
+
+    expect(collect($results)->pluck('result')->unique()->all())->toBe(['ok']);
+    expect(AuditLog::count())->toBe(5);
+
+    $report = app(IntegrityVerifier::class)->verifyAuditChain();
+
+    expect($report->issues)->toBe([])
+        ->and($report->scanned['audit_rows'])->toBe(5);
 });

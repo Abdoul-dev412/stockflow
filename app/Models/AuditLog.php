@@ -49,6 +49,7 @@ class AuditLog extends Model
             'stock_movement' => 'Mouvement',
             'export' => 'Export',
             'user' => 'Utilisateur',
+            'integrity' => 'Intégrité',
             default => $this->entity_type,
         };
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\AuditAction;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Models\IntegrityCheck;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -35,6 +36,10 @@ class AuditController extends Controller
             'logs' => $logs,
             'actions' => AuditAction::cases(),
             'users' => User::orderBy('name')->get(['id', 'name']),
+            'checks' => [
+            'stock' => IntegrityCheck::lastOf('stock'),
+            'audit' => IntegrityCheck::lastOf('audit'),
+        ],
         ]);
     }
 }

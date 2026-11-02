@@ -5,6 +5,8 @@ use App\Exceptions\InsufficientStockException;
 use App\Exceptions\StockMovementException;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Enums\AuditAction;
+use App\Services\AuditLogger;
 use App\Models\User;
 use App\Services\StockMovementService;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +38,9 @@ try {
     $service = app(StockMovementService::class);
 
     if ($action === 'exit') {
-        $service->recordExit(Product::findOrFail((int) $a), (int) $b, $user, MovementReason::Sale);
+    $service->recordExit(Product::findOrFail((int) $a), (int) $b, $user, MovementReason::Sale);
+    } elseif ($action === 'audit') {
+        app(AuditLogger::class)->record($user, AuditAction::DataExported, 'export', ['export' => 'worker-'.$a]);
     } else {
         $service->recordCorrection(StockMovement::findOrFail((int) $a), $user, 'Correction concurrente');
     }

@@ -5,6 +5,32 @@
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+                @foreach (['stock' => 'Cohérence du stock', 'audit' => "Chaîne d'audit"] as $type => $title)
+                    @php $check = $checks[$type]; @endphp
+                    <div class="bg-white shadow-sm sm:rounded-lg p-5 space-y-1">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-medium text-gray-900">{{ $title }}</h3>
+                            @if (! $check)
+                                <span class="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700">Jamais vérifié</span>
+                            @elseif ($check->status === 'ok')
+                                <span class="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Cohérent</span>
+                            @else
+                                <span class="rounded-full bg-red-100 px-2 py-1 text-xs text-red-800">{{ $check->issues_count }} anomalie(s)</span>
+                            @endif
+                        </div>
+
+                        @if ($check)
+                            <p class="text-xs text-gray-500">Dernière vérification : {{ $check->checked_at->format('d/m/Y H:i') }}</p>
+                            @foreach ($check->details['examples'] ?? [] as $example)
+                                <p class="text-xs text-red-700">{{ $example }}</p>
+                            @endforeach
+                        @endif
+
+                        <p class="text-xs text-gray-400">php artisan {{ $type }}:verify</p>
+                    </div>
+                @endforeach
+            </div>
             @if ($errors->any())
                 <div class="rounded-md bg-red-50 p-4 text-sm text-red-800">{{ $errors->first() }}</div>
             @endif
@@ -50,6 +76,7 @@
                             <th class="px-4 py-3 text-left font-medium text-gray-600">Utilisateur</th>
                             <th class="px-4 py-3 text-left font-medium text-gray-600">Action</th>
                             <th class="px-4 py-3 text-left font-medium text-gray-600">Élément</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-600">Empreinte</th>
                             <th class="px-4 py-3 text-left font-medium text-gray-600">Détails</th>
                         </tr>
                     </thead>
@@ -77,6 +104,7 @@
                                         {{ $log->entityLabel() }}{{ $log->entity_id ? ' n° '.$log->entity_id : '' }}
                                     @endif
                                 </td>
+                                <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $log->hash ? substr($log->hash, 0, 8) : '—' }}</td>
                                 <td class="px-4 py-3 text-xs text-gray-600 space-y-0.5">
                                     @foreach ($log->detailLines() as $line)
                                         <div>{{ $line }}</div>
@@ -85,7 +113,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-4 py-6 text-center text-gray-500">
+                                <td colspan="6" class="px-4 py-6 text-center text-gray-500">
                                     Aucune entrée d'audit.
                                 </td>
                             </tr>

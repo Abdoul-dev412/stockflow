@@ -12,16 +12,20 @@ use Illuminate\Support\Str;
 
 class AuditLogger
 {
+    public function __construct(private AuditChain $chain)
+    {
+    }
+
     /** @param Model|string $entity un modèle, ou un type libre (« export ») sans identifiant */
     public function record(?User $actor, AuditAction $action, Model|string $entity, array $details = []): AuditLog
     {
-        return AuditLog::create([
-            'user_id' => $actor?->getKey(),
-            'action' => $action->value,
-            'entity_type' => is_string($entity) ? $entity : Str::snake(class_basename($entity)),
-            'entity_id' => is_string($entity) ? null : $entity->getKey(),
-            'details' => $details === [] ? null : $details,
-        ]);
+        return $this->chain->append(
+            $actor === null ? null : (int) $actor->getKey(),
+            $action->value,
+            is_string($entity) ? $entity : Str::snake(class_basename($entity)),
+            is_string($entity) ? null : (int) $entity->getKey(),
+            $details === [] ? null : $details,
+        );
     }
 
     /** Enregistre un nouvel élément et sa trace d'audit dans la même transaction. */
