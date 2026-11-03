@@ -50,6 +50,7 @@ class AuditLog extends Model
             'export' => 'Export',
             'user' => 'Utilisateur',
             'integrity' => 'Intégrité',
+            'anomaly' => 'Anomalie',
             default => $this->entity_type,
         };
     }

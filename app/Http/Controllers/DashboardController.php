@@ -11,6 +11,7 @@ use App\Models\StockLot;
 use App\Models\Supplier;
 use App\Enums\CoverageLevel;
 use App\Services\CoverageCalculator;
+use App\Services\DailyActionsBuilder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -18,7 +19,7 @@ class DashboardController extends Controller
 {
     private const PERIODS = [7, 30, 90];
 
-    public function __invoke(Request $request, CoverageCalculator $coverage): View
+    public function __invoke(Request $request, CoverageCalculator $coverage, DailyActionsBuilder $actions): View
     {
         $days = in_array((int) $request->query('days'), self::PERIODS, true)
             ? (int) $request->query('days')
@@ -59,6 +60,7 @@ class DashboardController extends Controller
                 'expiring_lots' => $expiry['soon'],
                 'critical_coverage' => $criticalCoverage,
             ],
+            'actions' => $actions->forUser($request->user()),
             'restock' => Product::query()
                 ->active()
                 ->needsRestock()

@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('stock:verify')->dailyAt('02:00')->withoutOverlapping();
 Schedule::command('audit:verify')->dailyAt('02:15')->withoutOverlapping();
+Schedule::command('anomalies:detect')->dailyAt('03:00')->withoutOverlapping();

@@ -32,6 +32,11 @@
                         Audit
                     </x-nav-link>
                     @endcan
+                    @can('viewAny', App\Models\Anomaly::class)
+                        <x-nav-link :href="route('anomalies.index')" :active="request()->routeIs('anomalies.*')">
+                            Anomalies
+                        </x-nav-link>
+                    @endcan
                     @can('viewAny', App\Models\User::class)
                         <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                             Utilisateurs
@@ -114,6 +119,11 @@
             <x-responsive-nav-link :href="route('audit.index')" :active="request()->routeIs('audit.*')">
                 Audit
             </x-responsive-nav-link>
+            @endcan
+            @can('viewAny', App\Models\Anomaly::class)
+                <x-responsive-nav-link :href="route('anomalies.index')" :active="request()->routeIs('anomalies.*')">
+                    Anomalies
+                </x-responsive-nav-link>
             @endcan
             @can('viewAny', App\Models\User::class)
                 <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">

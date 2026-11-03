@@ -7,6 +7,48 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             <x-flash-status />
 
+            <section class="space-y-3">
+                <h3 class="text-lg font-semibold text-gray-900">Actions du jour</h3>
+
+                @forelse ($actions as $action)
+                    <div class="bg-white shadow-sm sm:rounded-lg border-l-4 p-5
+                        {{ $action->severity === 'critical' ? 'border-red-500' : 'border-amber-400' }}">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <div class="font-medium text-gray-900">
+                                    {{ $action->title }}
+                                    <span class="ml-1 rounded-full px-2 py-0.5 text-xs
+                                        {{ $action->severity === 'critical' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800' }}">
+                                        {{ $action->count }}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-gray-600">{{ $action->detail }}</p>
+                            </div>
+                            <a href="{{ $action->url }}"
+                                class="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-700">{{ $action->cta }} →</a>
+                        </div>
+
+                        @if ($action->items)
+                            <ul class="mt-3 space-y-1 text-sm text-gray-700">
+                                @foreach ($action->items as $item)
+                                    <li>
+                                        @if ($item['url'])
+                                            <a href="{{ $item['url'] }}" class="text-indigo-600 hover:underline">{{ $item['label'] }}</a>
+                                        @else
+                                            {{ $item['label'] }}
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                @empty
+                    <div class="bg-white shadow-sm sm:rounded-lg border-l-4 border-green-500 p-5 text-sm text-gray-700">
+                        Rien à signaler aujourd'hui : stocks, péremptions et contrôles sont au vert.
+                    </div>
+                @endforelse
+            </section>
+
             <div class="flex flex-wrap gap-2 text-sm">
                 @can('create', App\Models\Product::class)
                     <a href="{{ route('products.create') }}"

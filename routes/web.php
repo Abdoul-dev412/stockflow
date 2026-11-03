@@ -13,6 +13,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExpiryController;
+use App\Http\Controllers\AnomalyController;
 use App\Http\Controllers\ReplenishmentController;
 
 Route::get('/', function () {
@@ -73,6 +74,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('replenishment', [ReplenishmentController::class, 'index'])->name('replenishment.index');
     Route::post('replenishment/{supplier}', [ReplenishmentController::class, 'prepare'])->name('replenishment.prepare');
+
+    Route::get('anomalies', [AnomalyController::class, 'index'])->name('anomalies.index');
+    Route::patch('anomalies/{anomaly}', [AnomalyController::class, 'update'])->name('anomalies.update');
 });
 
 require __DIR__.'/auth.php';

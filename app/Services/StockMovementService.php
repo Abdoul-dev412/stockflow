@@ -23,7 +23,7 @@ class StockMovementService
 {
     public const MAX_STOCK = 2_000_000_000;
 
-    public function __construct(private AuditLogger $audit)
+    public function __construct(private AuditLogger $audit, private AnomalyDetector $anomalies)
     {
     }
 
@@ -520,7 +520,7 @@ class StockMovementService
         bool $requireActiveProduct,
         Closure $plan,
     ): StockMovement {
-        return DB::transaction(function () use ($productId, $user, $requireActiveProduct, $plan) {
+        $movement = DB::transaction(function () use ($productId, $user, $requireActiveProduct, $plan){
             // Verrou de ligne : toute autre transaction qui touche ce produit (et ses lots) attend ici.
             $locked = Product::query()->lockForUpdate()->find($productId);
 
@@ -555,11 +555,20 @@ class StockMovementService
                 'recorded_at' => now(),
             ]);
 
-            $this->applyLotEffects($movement, $locked, $plan['lotEffects']);
-            $this->auditSensitiveOperation($user, $locked, $movement);
+                    $this->applyLotEffects($movement, $locked, $plan['lotEffects']);
+                    $this->auditSensitiveOperation($user, $locked, $movement);
+
+                    return $movement;
+                }, 3);
+
+                // Après validation de la transaction : la détection ne doit jamais faire échouer une opération déjà enregistrée.
+                try {
+                    $this->anomalies->evaluate($movement);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
 
             return $movement;
-        }, 3);
     }
 
     /** @return array{type: MovementType, reason: MovementReason, quantity: int, after: int, comment: ?string, occurredAt: ?CarbonInterface, corrects: ?int, lotEffects: array} */

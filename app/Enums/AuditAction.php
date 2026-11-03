@@ -27,6 +27,8 @@ enum AuditAction: string
     case UserPasswordReset = 'user.password_reset';
     case ReplenishmentPrepared = 'replenishment.prepared';
     case IntegrityCheckFailed = 'integrity.failed';
+    case AnomalyReviewed = 'anomaly.reviewed';
+    case AnomalyIgnored = 'anomaly.ignored';
 
     public function label(): string
     {
@@ -54,6 +56,8 @@ enum AuditAction: string
             self::UserPasswordReset => 'Mot de passe réinitialisé',
             self::ReplenishmentPrepared => 'Réapprovisionnement préparé',
             self::IntegrityCheckFailed => "Anomalie d'intégrité détectée",
+            self::AnomalyReviewed => 'Anomalie examinée',
+            self::AnomalyIgnored => 'Anomalie ignorée',
         };
     }
 }

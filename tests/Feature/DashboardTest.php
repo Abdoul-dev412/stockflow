@@ -175,14 +175,26 @@ test('le tableau de bord ne déclenche pas de requêtes en cascade', function ()
     $user = User::factory()->create();
     $service = app(StockMovementService::class);
 
-    foreach (range(1, 10) as $i) {
+    $countQueries = function () use ($user) {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->actingAs($user)->get(route('dashboard'))->assertOk();
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $queries;
+    };
+
+    foreach (range(1, 2) as $i) {
         $service->recordEntry(Product::factory()->lowStock()->create(['quantity' => 0]), 5, $user);
     }
 
-    DB::enableQueryLog();
-    $this->actingAs($user)->get(route('dashboard'))->assertOk();
-    $queries = count(DB::getQueryLog());
-    DB::disableQueryLog();
+    $countQueries(); // échauffement
+    $few = $countQueries();
 
-    expect($queries)->toBeLessThan(15);
+    foreach (range(1, 12) as $i) {
+        $service->recordEntry(Product::factory()->lowStock()->create(['quantity' => 0]), 5, $user);
+    }
+
+    expect($countQueries())->toBe($few);
 });
