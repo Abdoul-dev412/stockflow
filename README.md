@@ -6,7 +6,7 @@ Application web de gestion de stocks et de mouvements de marchandises, pensée p
 
 > Projet de portfolio Full Stack. **Version actuelle : v0.1 (cœur).** Les modules d'aide à la décision (lots et FEFO, couverture en jours, réapprovisionnement) arrivent en v0.2, le mode hors ligne en v0.3.
 
-## Fonctionnalités de la v0.1
+## Fonctionnalités
 
 - **Produits, catégories, fournisseurs** : création, modification, désactivation, recherche, filtres combinables, tri, pagination côté serveur.
 - **Mouvements de stock** : entrées, sorties, ajustements d'inventaire (par quantité constatée) et corrections documentées. Chaque mouvement est tracé (avant, après, motif, utilisateur, date).
@@ -15,6 +15,11 @@ Application web de gestion de stocks et de mouvements de marchandises, pensée p
 - **Tableau de bord** : indicateurs calculés depuis la base, mouvements récents, produits à réapprovisionner.
 - **Journal d'audit** en lecture seule et **exports CSV** (produits, niveaux de stock, historique) avec neutralisation des formules.
 - **Utilisateurs et rôles** (administrateur, gestionnaire) avec contrôle des droits côté serveur, mots de passe temporaires à changer à la première connexion.
+- **Lots et péremptions** : numéro de lot et date de péremption à l'entrée, sorties en **FEFO** (le lot qui expire en premier), retrait des lots expirés, alertes de péremption.
+- **Aide à la décision** : couverture en jours (date de rupture estimée), réapprovisionnement en un clic avec message WhatsApp ou email pré-rempli, tableau de bord « Actions du jour » trié par gravité.
+- **Vérifiable** : `php artisan stock:verify` contrôle la cohérence du stock (quantités, chaîne avant/après, lots) et `php artisan audit:verify` détecte toute modification ou suppression du journal d'audit grâce à une chaîne de hachage.
+- **Anomalies** : quatre règles explicables (sortie exceptionnelle, ajustements négatifs répétés, pertes anormales, sortie sur produit dormant), traitées par l'administrateur.
+- **Analyse** : classification ABC, produits dormants et capital immobilisé, valorisation du stock, coût des pertes par motif.
 
 ## Pile technique
 
@@ -53,7 +58,6 @@ Mot de passe de tous les comptes : `password`.
 |---|---|
 | admin@stockflow.test | Administrateur |
 | gestionnaire@stockflow.test | Gestionnaire |
-| superviseur@stockflow.test | Gestionnaire |
 
 > Le seeder de démonstration refuse de s'exécuter en production.
 
@@ -100,23 +104,26 @@ php artisan migrate --force
 php artisan stockflow:create-admin   # crée le premier administrateur
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
+- Le planificateur doit tourner : ajoute cette entrée cron (`crontab -e`), qui exécute les vérifications d'intégrité (02:00 et 02:15) et la détection d'anomalies (03:00) :
+
+  `* * * * * cd /chemin/vers/stockflow && php artisan schedule:run >> /dev/null 2>&1`
 
 - `APP_ENV=production`, `APP_DEBUG=false`, une `APP_KEY` propre, `SESSION_SECURE_COOKIE=true`, HTTPS obligatoire.
 - Ne lance **jamais** le seeder de démonstration en production et utilise un mot de passe fort pour la base.
 - Sauvegarde régulière : `mysqldump -u <utilisateur> -p stockflow > sauvegarde.sql`.
 
-## Limites connues de la v0.1
+## Limites connues
 
-- Les mouvements sont immuables au niveau applicatif ; une requête SQL directe pourrait les modifier. La commande de vérification d'intégrité de la v0.2 la détectera.
-- Les textes fournis par Breeze (connexion, profil) sont en anglais ; la traduction complète est prévue en v1.0.
-- Le « mot de passe oublié » nécessite un envoi d'emails non configuré ; l'administrateur réinitialise les mots de passe.
-- Pas encore de lots et dates de péremption, de couverture en jours ni de mode hors ligne.
+- Les mouvements sont immuables au niveau applicatif ; une modification directe en SQL reste techniquement possible. Les vérifications d'intégrité permettent de détecter certaines incohérences.
+- Les textes fournis par Breeze (connexion, profil) restent en anglais ; la traduction complète est prévue pour une version ultérieure.
+- Le « mot de passe oublié » nécessite un service d'envoi d'emails configuré ; en attendant, l'administrateur réinitialise les mots de passe.
+- Le mode hors ligne (PWA) et la synchronisation restent à développer.
 
 ## Feuille de route
 
-- **v0.2** : lots et FEFO, couverture en jours, réapprovisionnement en un clic, intégrité vérifiable, anomalies, classification ABC.
-- **v0.3** : mode hors ligne (PWA), synchronisation idempotente, gestion des conflits, scan par caméra.
-- **v1.0** : déploiement, Docker, démonstration, traduction complète.
+- **v0.2** : lots et FEFO, couverture en jours, réapprovisionnement, intégrité vérifiable, détection d'anomalies et classification ABC.
+- **v0.3** : mode hors ligne (PWA), synchronisation idempotente, gestion des conflits et scan par caméra.
+- **v1.0** : déploiement, Docker, démonstration, traduction complète et amélioration de l'expérience utilisateur.
 
 
 
