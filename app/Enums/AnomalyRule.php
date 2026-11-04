@@ -27,7 +27,7 @@ enum AnomalyRule: string
             self::Spike => "Sortie supérieure à {$c['r1_multiplier']} fois la sortie médiane du produit sur {$c['window_days']} jours.",
             self::RepeatedNegativeAdjustments => "{$c['r2_count']} ajustements négatifs ou plus par le même utilisateur en {$c['r2_days']} jours.",
             self::LossShare => "Pertes, casses, vols et péremptions supérieurs à {$c['r3_percent']} % des sorties du produit sur {$c['window_days']} jours.",
-            self::DormantProduct => "Sortie sur un produit sans vente ni consommation depuis {$c['r4_dormant_days']} jours.",
+            self::DormantProduct => 'Sortie sur un produit sans vente ni consommation depuis '.config('stockflow.dormancy.days').' jours.',
         };
     }
 

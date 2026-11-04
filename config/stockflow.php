@@ -23,8 +23,17 @@ return [
         // R3 : part des pertes dans les sorties (en %), et nombre minimal de sorties pour juger.
         'r3_percent' => 20,
         'r3_min_exits' => 3,
-        // R4 : durée sans vente ni consommation pour qu'un produit soit dormant.
-        'r4_dormant_days' => 90,
+    ],
+    'dormancy' => [
+        // Un produit est dormant : du stock, et aucune vente ni consommation depuis ce nombre de jours.
+        'days' => 90,
+    ],
+
+    'abc' => [
+        'window_days' => 365,
+        // Seuils cumulés : A jusqu'à 80 % de la valeur, B jusqu'à 95 %, C ensuite.
+        'a_percent' => 80,
+        'b_percent' => 95,
     ],
 
     'replenishment' => [

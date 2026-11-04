@@ -18,6 +18,9 @@ use Illuminate\Support\Collection;
 
 class AnomalyDetector
 {
+    public function __construct(private DormancyCalculator $dormancy)
+    {
+    }
     /** Motifs de sortie qui constituent une perte (R3). */
     private const LOSS_REASONS = [
         MovementReason::Loss, MovementReason::Breakage, MovementReason::Expiry, MovementReason::Theft,
@@ -27,9 +30,6 @@ class AnomalyDetector
     private const DORMANT_CHECKED_REASONS = [
         MovementReason::Sale, MovementReason::InternalUse, MovementReason::Theft, MovementReason::Other,
     ];
-
-    /** Seules ces sorties comptent comme activité d'un produit (elles remettent le compteur de dormance à zéro). */
-    private const CONSUMPTION_REASONS = [MovementReason::Sale, MovementReason::InternalUse];
 
     /**
      * Évalue les règles déclenchées par un mouvement appliqué.
@@ -278,29 +278,10 @@ class AnomalyDetector
             return false;
         }
 
-        $threshold = (int) config('stockflow.anomalies.r4_dormant_days');
-        $at = $movement->occurred_at;
+        $threshold = $this->dormancy->thresholdDays();
+        $idleDays = $this->dormancy->idleDays($product, $movement->occurred_at, $movement->id);
 
-        $lastConsumption = $this->appliedExits($product->id)
-            ->whereIn('reason_code', array_map(fn (MovementReason $reason) => $reason->value, self::CONSUMPTION_REASONS))
-            ->where('id', '<>', $movement->id)
-            ->where('occurred_at', '<=', $at)
-            ->max('occurred_at');
-
-        // Sans vente ni consommation passée, la référence est le premier mouvement du produit.
-        $reference = $lastConsumption ?? StockMovement::query()
-            ->where('product_id', $product->id)
-            ->where('status', MovementStatus::Applied->value)
-            ->where('id', '<>', $movement->id)
-            ->min('occurred_at');
-
-        if ($reference === null) {
-            return false;
-        }
-
-        $idleDays = (int) floor(Carbon::parse($reference)->diffInDays($at, false));
-
-        if ($idleDays < $threshold) {
+        if ($idleDays === null || $idleDays < $threshold) {
             return false;
         }
 
@@ -308,7 +289,7 @@ class AnomalyDetector
             'product_id' => $product->id,
             'user_id' => $movement->user_id,
             'movement_id' => $movement->id,
-            'occurred_at' => $at,
+            'occurred_at' => $movement->occurred_at,
             'message' => sprintf(
                 "Sortie de %d %s sur %s : ce produit n'avait eu aucune vente ni consommation depuis %d jours.",
                 $movement->quantity, $product->unit, $product->sku, $idleDays,
@@ -316,7 +297,6 @@ class AnomalyDetector
             'details' => ['idle_days' => $idleDays, 'threshold_days' => $threshold],
         ]);
     }
-
     // ------------------------------------------------------------------ Outils
 
     /** Sorties appliquées d'un produit, hors mouvements annulés par une correction. */

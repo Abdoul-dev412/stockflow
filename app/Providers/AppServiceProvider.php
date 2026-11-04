@@ -23,5 +23,6 @@ class AppServiceProvider extends ServiceProvider
     {
         //
         Gate::define('export-data', fn (User $user) => $user->is_active && $user->isAdmin());
+        Gate::define('view-analysis', fn (User $user) => $user->is_active && $user->isAdmin());
     }
 }

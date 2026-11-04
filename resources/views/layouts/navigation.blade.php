@@ -24,6 +24,9 @@
                     <x-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
                      Alertes
                     </x-nav-link>
+                    <x-nav-link :href="route('expiries.index')" :active="request()->routeIs('expiries.*')">
+                        Péremptions
+                    </x-nav-link>
                     <x-nav-link :href="route('replenishment.index')" :active="request()->routeIs('replenishment.*')">
                      Réapprovisionnement
                     </x-nav-link>
@@ -35,6 +38,11 @@
                     @can('viewAny', App\Models\Anomaly::class)
                         <x-nav-link :href="route('anomalies.index')" :active="request()->routeIs('anomalies.*')">
                             Anomalies
+                        </x-nav-link>
+                    @endcan
+                    @can('view-analysis')
+                        <x-nav-link :href="route('analysis.valuation')" :active="request()->routeIs('analysis.*')">
+                            Analyse
                         </x-nav-link>
                     @endcan
                     @can('viewAny', App\Models\User::class)
@@ -112,6 +120,9 @@
             <x-responsive-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
              Alertes
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('expiries.index')" :active="request()->routeIs('expiries.*')">
+                Péremptions
+            </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('replenishment.index')" :active="request()->routeIs('replenishment.*')">
                 Réapprovisionnement
             </x-responsive-nav-link>
@@ -123,6 +134,11 @@
             @can('viewAny', App\Models\Anomaly::class)
                 <x-responsive-nav-link :href="route('anomalies.index')" :active="request()->routeIs('anomalies.*')">
                     Anomalies
+                </x-responsive-nav-link>
+            @endcan
+            @can('view-analysis')
+                <x-responsive-nav-link :href="route('analysis.valuation')" :active="request()->routeIs('analysis.*')">
+                    Analyse
                 </x-responsive-nav-link>
             @endcan
             @can('viewAny', App\Models\User::class)

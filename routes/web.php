@@ -15,6 +15,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ExpiryController;
 use App\Http\Controllers\AnomalyController;
 use App\Http\Controllers\ReplenishmentController;
+use App\Http\Controllers\AnalysisController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -77,6 +78,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('anomalies', [AnomalyController::class, 'index'])->name('anomalies.index');
     Route::patch('anomalies/{anomaly}', [AnomalyController::class, 'update'])->name('anomalies.update');
+
+    Route::middleware('can:view-analysis')->prefix('analysis')->name('analysis.')->group(function () {
+    Route::get('valuation', [AnalysisController::class, 'valuation'])->name('valuation');
+    Route::get('abc', [AnalysisController::class, 'abc'])->name('abc');
+});
 });
 
 require __DIR__.'/auth.php';
