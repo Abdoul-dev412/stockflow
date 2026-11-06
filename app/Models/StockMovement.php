@@ -18,7 +18,7 @@ class StockMovement extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'uuid', 'product_id', 'user_id', 'type', 'reason_code',
+        'uuid', 'product_id', 'user_id','device_id', 'type', 'reason_code',
         'quantity', 'quantity_before', 'quantity_after', 'reason',
         'corrects_movement_id', 'status', 'occurred_at', 'recorded_at',
     ];
@@ -94,5 +94,10 @@ class StockMovement extends Model
     public function allocations(): HasMany
     {
         return $this->hasMany(MovementLotAllocation::class, 'movement_id');
+    }
+
+    public function device(): BelongsTo
+    {
+        return $this->belongsTo(Device::class);
     }
 }

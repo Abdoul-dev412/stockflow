@@ -27,6 +27,20 @@ class StockMovementService
     {
     }
 
+    private ?string $originUuid = null;
+
+    private ?int $originDeviceId = null;
+
+    /** Copie du service dont les mouvements portent l'UUID de l'opération hors ligne et l'appareil d'origine. */
+    public function from(string $uuid, ?int $deviceId): static
+    {
+        $copy = clone $this;
+        $copy->originUuid = $uuid;
+        $copy->originDeviceId = $deviceId;
+
+        return $copy;
+    }
+
     public function recordEntry(
         Product $product,
         int $quantity,
@@ -540,9 +554,10 @@ class StockMovementService
             $locked->forceFill(['quantity' => $plan['after']])->save();
 
             $movement = StockMovement::create([
-                'uuid' => (string) Str::uuid(),
+                'uuid' => $this->originUuid ?? (string) Str::uuid(),
                 'product_id' => $locked->id,
                 'user_id' => $user->getKey(),
+                'device_id' => $this->originDeviceId,
                 'type' => $plan['type'],
                 'reason_code' => $plan['reason'],
                 'quantity' => $plan['quantity'],

@@ -10,6 +10,9 @@ use Symfony\Component\Process\Process;
 use App\Models\StockLot;
 use App\Models\AuditLog;
 use App\Services\IntegrityVerifier;
+use App\Models\Device;
+use App\Models\SyncOperation;
+use Illuminate\Support\Str;
 
 
 // Ces tests écrivent réellement en base (pas de transaction) : ils vident la base de test.
@@ -152,4 +155,42 @@ test("cinq écritures d'audit simultanées gardent la chaîne linéaire et véri
 
     expect($report->issues)->toBe([])
         ->and($report->scanned['audit_rows'])->toBe(5);
+});
+
+test("le même identifiant envoyé deux fois simultanément n'est appliqué qu'une fois", function () {
+    $user = User::factory()->create();
+    $device = Device::factory()->create(['user_id' => $user->id]);
+    $product = Product::factory()->create(['quantity' => 10]);
+    $uuid = (string) Str::uuid();
+
+    $results = runStockWorkers(array_fill(0, 2, [
+        'action' => 'sync', 'user' => $user->id, 'a' => "{$device->id}|{$product->id}|{$uuid}", 'b' => 3,
+    ]));
+
+    expect(collect($results)->pluck('result')->sort()->values()->all())->toBe(['applied', 'duplicate']);
+
+    expect($product->fresh()->quantity)->toBe(7)
+        ->and(StockMovement::count())->toBe(1)
+        ->and(SyncOperation::count())->toBe(1);
+});
+
+test('cinq appareils qui sortent 3 sur un stock de 10 : trois appliquées, deux en conflit', function () {
+    $user = User::factory()->create();
+    $device = Device::factory()->create(['user_id' => $user->id]);
+    $product = Product::factory()->create(['quantity' => 10]);
+
+    $results = runStockWorkers(array_map(fn () => [
+        'action' => 'sync', 'user' => $user->id, 'a' => "{$device->id}|{$product->id}|".Str::uuid(), 'b' => 3,
+    ], range(1, 5)));
+
+    $counts = collect($results)->pluck('result')->countBy();
+
+    expect($counts->get('applied', 0))->toBe(3)
+        ->and($counts->get('conflict', 0))->toBe(2)
+        ->and($counts->get('error', 0))->toBe(0);
+
+    expect($product->fresh()->quantity)->toBe(1)
+        ->and(StockMovement::count())->toBe(3)
+        ->and(SyncOperation::where('status', 'applied')->count())->toBe(3)
+        ->and(SyncOperation::where('status', 'conflict')->count())->toBe(2);
 });

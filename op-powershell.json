@@ -1,0 +1,13 @@
+{
+  "operations": [
+    {
+      "uuid": "22222222-3333-4444-8555-666666666666",
+      "seq": 2,
+      "type": "exit",
+      "product_id": 2,
+      "quantity": 99999,
+      "reason_code": "sale",
+      "occurred_at": "2026-11-06T00:15:00Z"
+    }
+  ]
+}

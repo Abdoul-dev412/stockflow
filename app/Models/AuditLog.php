@@ -51,6 +51,7 @@ class AuditLog extends Model
             'user' => 'Utilisateur',
             'integrity' => 'Intégrité',
             'anomaly' => 'Anomalie',
+            'device' => 'Appareil',
             default => $this->entity_type,
         };
     }

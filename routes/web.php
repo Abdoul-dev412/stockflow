@@ -16,6 +16,7 @@ use App\Http\Controllers\ExpiryController;
 use App\Http\Controllers\AnomalyController;
 use App\Http\Controllers\ReplenishmentController;
 use App\Http\Controllers\AnalysisController;
+use App\Http\Controllers\DeviceController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -80,9 +81,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('anomalies/{anomaly}', [AnomalyController::class, 'update'])->name('anomalies.update');
 
     Route::middleware('can:view-analysis')->prefix('analysis')->name('analysis.')->group(function () {
-    Route::get('valuation', [AnalysisController::class, 'valuation'])->name('valuation');
-    Route::get('abc', [AnalysisController::class, 'abc'])->name('abc');
-});
+        Route::get('valuation', [AnalysisController::class, 'valuation'])->name('valuation');
+        Route::get('abc', [AnalysisController::class, 'abc'])->name('abc');
+    });
+
+    
+    Route::prefix('devices')->name('devices.')->group(function () {
+        Route::get('/', [DeviceController::class, 'index'])->name('index');
+        Route::post('/', [DeviceController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('store');
+        Route::post('/{device}/token', [DeviceController::class, 'renew'])->name('renew');
+        Route::patch('/{device}/revoke', [DeviceController::class, 'revoke'])->name('revoke');
+    });
+
 });
 
 require __DIR__.'/auth.php';

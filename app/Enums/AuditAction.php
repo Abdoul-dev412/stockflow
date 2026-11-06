@@ -29,6 +29,10 @@ enum AuditAction: string
     case IntegrityCheckFailed = 'integrity.failed';
     case AnomalyReviewed = 'anomaly.reviewed';
     case AnomalyIgnored = 'anomaly.ignored';
+    case DeviceRegistered = 'device.registered';
+    case DeviceTokenRenewed = 'device.token_renewed';
+    case DeviceRevoked = 'device.revoked';
+    case SyncRejected = 'sync.rejected';
 
     public function label(): string
     {
@@ -58,6 +62,10 @@ enum AuditAction: string
             self::IntegrityCheckFailed => "Anomalie d'intégrité détectée",
             self::AnomalyReviewed => 'Anomalie examinée',
             self::AnomalyIgnored => 'Anomalie ignorée',
+            self::DeviceRegistered => 'Appareil enregistré',
+            self::DeviceTokenRenewed => "Jeton d'appareil renouvelé",
+            self::DeviceRevoked => 'Appareil révoqué',
+            self::SyncRejected => 'Synchronisation rejetée',
         };
     }
 }

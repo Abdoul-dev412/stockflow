@@ -42,4 +42,14 @@ return [
         // Sans consommation connue : on vise ce multiple du seuil minimal.
         'fallback_threshold_multiplier' => 2,
     ],
+
+    'sync' => [
+    // Durée de vie d'un jeton d'appareil, en jours : au-delà, reconnexion et renouvellement.
+    'token_days' => 7,
+    'max_devices_per_user' => 5,
+    // Limite par jeton et par minute (le triple par adresse IP).
+    'rate_limit_per_minute' => 120,
+    // Le curseur de synchronisation recule de quelques secondes (transactions validées en retard).
+    'cursor_lag_seconds' => 10,
+],
 ];

@@ -10,6 +10,8 @@ use App\Services\AuditLogger;
 use App\Models\User;
 use App\Services\StockMovementService;
 use Illuminate\Support\Facades\DB;
+use App\Models\Device;
+use App\Services\SyncService;
 
 require __DIR__.'/../../vendor/autoload.php';
 
@@ -35,6 +37,23 @@ while (microtime(true) < (float) $startAt) {
 }
 
 try {
+        if ($action === 'sync') {
+        // $a = « appareil|produit|uuid », $b = quantité : une sortie envoyée comme le ferait un appareil.
+        [$deviceId, $productId, $uuid] = explode('|', $a);
+
+        $outcome = app(SyncService::class)->processBatch(Device::findOrFail((int) $deviceId), [[
+            'uuid' => $uuid,
+            'seq' => 1,
+            'type' => 'exit',
+            'product_id' => (int) $productId,
+            'quantity' => (int) $b,
+            'reason_code' => 'sale',
+            'occurred_at' => now()->subMinute()->toIso8601String(),
+        ]]);
+
+        echo json_encode(['result' => $outcome['results'][0]['status']]);
+        exit(0);
+    }
     $service = app(StockMovementService::class);
 
     if ($action === 'exit') {

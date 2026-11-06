@@ -12,7 +12,10 @@ test('toutes les routes applicatives exigent une authentification', function () 
     expect($routes->count())->toBeGreaterThan(40);
 
     $unprotected = $routes
-        ->reject(fn ($route) => in_array('auth', $route->gatherMiddleware(), true))
+        ->reject(fn ($route) => array_intersect(
+                ['auth', \App\Http\Middleware\AuthenticateDevice::class],
+                $route->gatherMiddleware(),
+            ) !== [])
         ->map(fn ($route) => implode('|', $route->methods()).' '.$route->uri())
         ->values()
         ->all();
