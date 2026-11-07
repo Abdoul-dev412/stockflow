@@ -83,6 +83,35 @@ class SyncService
         return ['results' => $results, 'blocked' => $blocked['code'] ?? null];
     }
 
+    /**
+     * Rejoue la sortie d'une opération hors ligne déjà enregistrée (résolution d'un conflit).
+     * $quantity remplace la quantité d'origine (application partielle).
+     *
+     * @return array{0: StockMovement, 1: array<int, string>} le mouvement créé et les notes
+     *
+     * @throws StockMovementException
+     */
+    public function applyExit(SyncOperation $record, ?int $quantity = null): array
+    {
+        $product = Product::query()->find($record->product_id)
+            ?? throw new StockMovementException('Produit introuvable.');
+
+        $data = $record->payload;
+        $data['quantity'] = $quantity ?? (int) ($data['quantity'] ?? 0);
+
+        $notes = [];
+        $movement = $this->exit(
+            $this->stock->from($record->uuid, $record->device_id),
+            $product,
+            $data,
+            $record->user,
+            $record->occurred_at->copy(),
+            $notes,
+        );
+
+        return [$movement, $notes];
+    }
+
     private function processOne(Device $device, array $operation, ?array $blocked): array
     {
         $uuid = isset($operation['uuid']) && is_string($operation['uuid']) && Str::isUuid($operation['uuid'])

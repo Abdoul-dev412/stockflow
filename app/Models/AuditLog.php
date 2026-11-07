@@ -52,6 +52,7 @@ class AuditLog extends Model
             'integrity' => 'Intégrité',
             'anomaly' => 'Anomalie',
             'device' => 'Appareil',
+            'sync_operation' => 'Opération hors ligne',
             default => $this->entity_type,
         };
     }

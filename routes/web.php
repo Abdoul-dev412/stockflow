@@ -17,6 +17,7 @@ use App\Http\Controllers\AnomalyController;
 use App\Http\Controllers\ReplenishmentController;
 use App\Http\Controllers\AnalysisController;
 use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\SyncOperationController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -94,6 +95,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{device}/token', [DeviceController::class, 'renew'])->name('renew');
         Route::patch('/{device}/revoke', [DeviceController::class, 'revoke'])->name('revoke');
     });
+
+    Route::get('sync-operations', [SyncOperationController::class, 'index'])->name('sync-operations.index');
+    Route::post('sync-operations/{operation}/resolve', [SyncOperationController::class, 'resolve'])->name('sync-operations.resolve');
 
 });
 

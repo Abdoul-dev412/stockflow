@@ -22,6 +22,7 @@ class MovementFilterRequest extends FormRequest
             'user' => ['nullable', 'integer', 'min:1'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'device' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

@@ -33,6 +33,8 @@ enum AuditAction: string
     case DeviceTokenRenewed = 'device.token_renewed';
     case DeviceRevoked = 'device.revoked';
     case SyncRejected = 'sync.rejected';
+    case SyncConflictResolved = 'sync.conflict_resolved';
+    case SyncAdjustmentValidated = 'sync.adjustment_validated';
 
     public function label(): string
     {
@@ -66,6 +68,8 @@ enum AuditAction: string
             self::DeviceTokenRenewed => "Jeton d'appareil renouvelé",
             self::DeviceRevoked => 'Appareil révoqué',
             self::SyncRejected => 'Synchronisation rejetée',
+            self::SyncConflictResolved => 'Conflit de synchronisation résolu',
+            self::SyncAdjustmentValidated => 'Ajustement hors ligne traité',
         };
     }
 }

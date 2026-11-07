@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\MovementStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 
 class SyncOperation extends Model
 {
@@ -46,5 +47,26 @@ class SyncOperation extends Model
     public function movement(): BelongsTo
     {
         return $this->belongsTo(StockMovement::class, 'movement_id');
+    }
+
+    public function resolver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'resolved_by');
+    }
+
+    /** Un administrateur voit toutes les opérations ; les autres, uniquement les leurs. */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        return $user->isAdmin() ? $query : $query->where('user_id', $user->id);
+    }
+
+    public function typeLabel(): string
+    {
+        return match ($this->type) {
+            'entry' => 'Entrée',
+            'exit' => 'Sortie',
+            'adjustment' => 'Inventaire',
+            default => 'Opération',
+        };
     }
 }

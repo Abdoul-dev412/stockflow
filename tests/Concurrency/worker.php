@@ -12,6 +12,8 @@ use App\Services\StockMovementService;
 use Illuminate\Support\Facades\DB;
 use App\Models\Device;
 use App\Services\SyncService;
+use App\Models\SyncOperation;
+use App\Services\SyncResolver;
 
 require __DIR__.'/../../vendor/autoload.php';
 
@@ -60,6 +62,8 @@ try {
     $service->recordExit(Product::findOrFail((int) $a), (int) $b, $user, MovementReason::Sale);
     } elseif ($action === 'audit') {
         app(AuditLogger::class)->record($user, AuditAction::DataExported, 'export', ['export' => 'worker-'.$a]);
+    } elseif ($action === 'resolve') {
+        app(SyncResolver::class)->applyAvailable(SyncOperation::findOrFail((int) $a), $user);
     } else {
         $service->recordCorrection(StockMovement::findOrFail((int) $a), $user, 'Correction concurrente');
     }

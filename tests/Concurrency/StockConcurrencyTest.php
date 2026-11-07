@@ -13,6 +13,7 @@ use App\Services\IntegrityVerifier;
 use App\Models\Device;
 use App\Models\SyncOperation;
 use Illuminate\Support\Str;
+use App\Enums\MovementStatus;
 
 
 // Ces tests écrivent réellement en base (pas de transaction) : ils vident la base de test.
@@ -193,4 +194,33 @@ test('cinq appareils qui sortent 3 sur un stock de 10 : trois appliquées, deux 
         ->and(StockMovement::count())->toBe(3)
         ->and(SyncOperation::where('status', 'applied')->count())->toBe(3)
         ->and(SyncOperation::where('status', 'conflict')->count())->toBe(2);
+});
+
+test('deux résolutions simultanées du même conflit : une seule réussit', function () {
+    $owner = User::factory()->create();
+    $device = Device::factory()->create(['user_id' => $owner->id]);
+    $product = Product::factory()->create(['quantity' => 5]);
+    $uuid = (string) Str::uuid();
+
+    $operation = SyncOperation::create([
+        'uuid' => $uuid,
+        'device_id' => $device->id,
+        'user_id' => $owner->id,
+        'seq' => 1,
+        'type' => 'exit',
+        'product_id' => $product->id,
+        'payload' => ['uuid' => $uuid, 'type' => 'exit', 'product_id' => $product->id, 'quantity' => 8, 'reason_code' => 'sale'],
+        'occurred_at' => now()->subHour(),
+        'status' => MovementStatus::Conflict,
+        'reason' => 'Stock insuffisant : 5 disponible(s), 8 demandé(s).',
+        'received_at' => now()->subMinutes(30),
+    ]);
+
+    $results = runStockWorkers(array_fill(0, 2, ['action' => 'resolve', 'user' => $owner->id, 'a' => $operation->id]));
+
+    expect(collect($results)->pluck('result')->sort()->values()->all())->toBe(['ok', 'refused']);
+
+    expect($product->fresh()->quantity)->toBe(0)
+        ->and(StockMovement::count())->toBe(1)
+        ->and($operation->fresh()->status->value)->toBe('applied');
 });

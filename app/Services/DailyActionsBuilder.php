@@ -10,6 +10,8 @@ use App\Models\StockLot;
 use App\Models\User;
 use App\Support\DailyAction;
 use Illuminate\Support\Collection;
+use App\Enums\MovementStatus;
+use App\Models\SyncOperation;
 
 class DailyActionsBuilder
 {
@@ -34,6 +36,8 @@ class DailyActionsBuilder
             $admin ? $this->integrity() : null,
             $this->expiredLots($expiry),
             $this->replenishment(),
+            $this->syncConflicts($user),
+            $admin ? $this->syncAdjustments() : null,
             $admin ? $this->anomalies() : null,
             $this->expiringSoon($expiry),
         ])
@@ -183,5 +187,57 @@ class DailyActionsBuilder
             'label' => "{$lot->product->name} : lot {$lot->lot_number}, {$lot->quantity_remaining} {$lot->product->unit}, {$lot->expiryLabel()}",
             'url' => route('products.show', $lot->product),
         ])->values()->all();
+    }
+
+    private function syncConflicts(User $user): ?DailyAction
+    {
+        $query = SyncOperation::query()->visibleTo($user)->where('status', MovementStatus::Conflict->value);
+        $count = (clone $query)->count();
+
+        if ($count === 0) {
+            return null;
+        }
+
+        $latest = $query->with('product:id,sku,unit')->orderByDesc('received_at')->orderByDesc('id')->limit(self::MAX_ITEMS)->get();
+
+        return new DailyAction(
+            'sync_conflicts', 'warning', 'Conflits de synchronisation à résoudre', $count,
+            $user->isAdmin()
+                ? 'Des sorties saisies hors ligne dépassaient le stock : le stock du système ne reflète pas encore la réalité.'
+                : "Certaines de tes sorties saisies hors ligne n'ont pas pu être enregistrées.",
+            route('sync-operations.index', ['status' => 'conflict']), 'Résoudre',
+            $latest->map(fn (SyncOperation $operation) => [
+                'label' => sprintf(
+                    'Sortie de %s %s sur %s : %s',
+                    $operation->payload['quantity'] ?? '?', $operation->product?->unit ?? '', $operation->product?->sku ?? '?', $operation->reason,
+                ),
+                'url' => null,
+            ])->all(),
+        );
+    }
+
+    private function syncAdjustments(): ?DailyAction
+    {
+        $query = SyncOperation::query()->where('status', MovementStatus::PendingValidation->value);
+        $count = (clone $query)->count();
+
+        if ($count === 0) {
+            return null;
+        }
+
+        $latest = $query->with(['product:id,sku', 'user:id,name'])->orderByDesc('received_at')->orderByDesc('id')->limit(self::MAX_ITEMS)->get();
+
+        return new DailyAction(
+            'sync_adjustments', 'warning', 'Inventaires hors ligne à valider', $count,
+            "Ces comptages ne sont jamais appliqués automatiquement : à confirmer ou à refuser.",
+            route('sync-operations.index', ['status' => 'pending_validation']), 'Valider',
+            $latest->map(fn (SyncOperation $operation) => [
+                'label' => sprintf(
+                    'Inventaire de %s sur %s, saisi par %s',
+                    $operation->payload['counted_quantity'] ?? '?', $operation->product?->sku ?? '?', $operation->user->name,
+                ),
+                'url' => null,
+            ])->all(),
+        );
     }
 }

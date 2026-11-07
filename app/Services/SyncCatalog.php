@@ -7,6 +7,9 @@ use App\Models\Product;
 use App\Models\StockLot;
 use App\Models\Supplier;
 use Carbon\CarbonInterface;
+use App\Enums\MovementStatus;
+use App\Models\Device;
+use App\Models\SyncOperation;
 
 class SyncCatalog
 {
@@ -14,7 +17,7 @@ class SyncCatalog
      * Changements du catalogue depuis $since (tout le catalogue si null).
      * Aucun prix, aucun utilisateur, aucune donnée d'audit : seulement le nécessaire au travail hors ligne.
      */
-    public function changes(?CarbonInterface $since): array
+    public function changes(?CarbonInterface $since, ?Device $device = null): array
     {
         // Le curseur recule de quelques secondes : une transaction validée juste après la lecture
         // est captée au tour suivant. Les lignes revues deux fois sont sans danger (mise à jour par identifiant).
@@ -89,6 +92,7 @@ class SyncCatalog
                 'quantity_remaining' => $lot->quantity_remaining,
                 'updated_at' => $lot->updated_at->toIso8601String(),
             ])->values()->all(),
+            'operations' => $device === null ? [] : $this->operations($device, $since),
             'settings' => [
                 'coverage' => config('stockflow.coverage'),
                 'replenishment' => config('stockflow.replenishment'),
@@ -96,5 +100,39 @@ class SyncCatalog
                 'expiry_warning_days' => StockLot::EXPIRY_WARNING_DAYS,
             ],
         ];
+    }
+
+    /**
+     * Le sort des opérations de CET appareil : première synchronisation, celles encore ouvertes ;
+     * ensuite, celles résolues depuis le curseur.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function operations(Device $device, ?CarbonInterface $since): array
+    {
+        return SyncOperation::query()
+            ->with('movement:id,quantity_after')
+            ->where('device_id', $device->id)
+            ->when(
+                $since === null,
+                fn ($query) => $query->whereIn('status', [
+                    MovementStatus::Conflict->value, MovementStatus::PendingValidation->value,
+                ]),
+                fn ($query) => $query->where('resolved_at', '>=', $since),
+            )
+            ->orderBy('id')
+            ->get()
+            ->map(fn (SyncOperation $operation) => [
+                'uuid' => $operation->uuid,
+                'seq' => $operation->seq,
+                'status' => $operation->status->value,
+                'reason' => $operation->reason,
+                'notes' => $operation->notes ?? [],
+                'movement_id' => $operation->movement_id,
+                'quantity_after' => $operation->movement?->quantity_after,
+                'resolved_at' => $operation->resolved_at?->toIso8601String(),
+            ])
+            ->values()
+            ->all();
     }
 }

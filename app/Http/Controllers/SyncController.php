@@ -40,6 +40,6 @@ class SyncController extends Controller
 
         $data = $request->validate(['since' => ['nullable', 'date']]);
 
-        return response()->json($catalog->changes(isset($data['since']) ? Carbon::parse($data['since']) : null));
+        return response()->json($catalog->changes(isset($data['since']) ? Carbon::parse($data['since']) : null, $device));
     }
 }

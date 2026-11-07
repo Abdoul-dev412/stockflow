@@ -19,6 +19,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use App\Http\Requests\MovementFilterRequest;
 use App\Models\StockLot;
+use App\Models\Device;
 
 class StockMovementController extends Controller
 {
@@ -33,7 +34,7 @@ class StockMovementController extends Controller
         $filters = $request->validated();
 
         $movements = StockMovement::query()
-            ->with(['product', 'user:id,name', 'allocations.lot:id,lot_number'])
+            ->with(['product', 'user:id,name', 'device:id,name', 'allocations.lot:id,lot_number'])
             ->withExists('correction')
             ->filtered($filters)
             ->orderByDesc('occurred_at')
@@ -46,6 +47,10 @@ class StockMovementController extends Controller
             'productFilter' => isset($filters['product']) ? Product::withTrashed()->find($filters['product']) : null,
             'users' => User::orderBy('name')->get(['id', 'name']),
             'types' => MovementType::cases(),
+            'devices' => Device::query()
+                ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('user_id', $request->user()->id))
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 

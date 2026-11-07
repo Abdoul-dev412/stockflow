@@ -50,6 +50,15 @@
                     @endforeach
                 </select>
 
+                @if ($devices->isNotEmpty())
+                    <select name="device" class="border-gray-300 rounded-md shadow-sm text-sm">
+                        <option value="">Tous les appareils</option>
+                        @foreach ($devices as $device)
+                            <option value="{{ $device->id }}" @selected((int) request('device') === $device->id)>{{ $device->name }}</option>
+                        @endforeach
+                    </select>
+                @endif
+
                 <label class="text-sm text-gray-600">Du
                     <input type="date" name="from" value="{{ request('from') }}"
                         class="border-gray-300 rounded-md shadow-sm text-sm">
@@ -110,7 +119,12 @@
                                         <div class="text-xs text-purple-700">Corrige le mouvement n° {{ $movement->corrects_movement_id }}</div>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3">{{ $movement->user->name }}</td>
+                                <td class="px-4 py-3">
+                                    {{ $movement->user->name }}
+                                    @if ($movement->device)
+                                        <div class="text-xs text-gray-500">via {{ $movement->device->name }}</div>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
                                     @if ($movement->correction_exists)
                                         <span class="rounded-full bg-gray-200 px-2 py-1 text-xs text-gray-700">Corrigé</span>

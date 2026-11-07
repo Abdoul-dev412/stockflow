@@ -88,6 +88,7 @@ class StockMovement extends Model
                     ->orWhere('sku', 'like', "%{$search}%"))))
             ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
             ->when($filters['user'] ?? null, fn ($q, $id) => $q->where('user_id', $id))
+            ->when($filters['device'] ?? null, fn ($q, $id) => $q->where('device_id', $id))
             ->when($filters['from'] ?? null, fn ($q, $date) => $q->where('occurred_at', '>=', Carbon::parse($date)->startOfDay()))
             ->when($filters['to'] ?? null, fn ($q, $date) => $q->where('occurred_at', '<=', Carbon::parse($date)->endOfDay()));
     }
